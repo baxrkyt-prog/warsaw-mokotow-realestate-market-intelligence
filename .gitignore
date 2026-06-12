@@ -1,0 +1,33 @@
+# Environment
+venv/
+.env
+
+# Database — contains scraped data, not for version control
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+
+# Debug & development artifacts
+debug_*.py
+debug_*.html
+dashboard.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Screenshots placeholder — add real ones before publishing
+# screenshots/*.png  ← uncomment to ignore if not ready
