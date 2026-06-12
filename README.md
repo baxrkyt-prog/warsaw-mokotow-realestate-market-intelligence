@@ -1,4 +1,4 @@
-# Ocean Plaza Market Intelligence
+# Warsaw Market Intelligence
 
 > **Real Estate Market Intelligence Platform for Commercial Asset Management**
 
