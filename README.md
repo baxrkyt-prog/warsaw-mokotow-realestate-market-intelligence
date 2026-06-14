@@ -253,14 +253,29 @@ Unified view across both market segments. Displays price at watchlist addition, 
 
 ## Screenshots
 
-| Screen | Preview |
-|---|---|
-| Home Screen | ![Home](screenshots/homepage.png) |
-| Office Overview | ![Office Overview](screenshots/office_overview.png) |
-| Residential Market | ![Residential](screenshots/residential_market.png) |
-| Developer Projects | ![Developers](screenshots/developer_projects.png) |
-| Project Profile | ![Project Profile](screenshots/project_profile.png) |
-| Alert Center | ![Alerts](screenshots/alerts.png) |
+### Intelligence Center — 15-second market overview
+Market Snapshot scores, What Changed signals, Ocean Plaza zone table and an auto-generated market narrative.
+
+![Intelligence Center](screenshots/intelligence_center.png)
+
+### Pricing Intelligence — asking vs transaction spread
+Spread, Negotiation Index, Liquidity Score and Pricing Pressure Score with data-confidence levels.
+
+![Pricing Intelligence](screenshots/pricing_intelligence.png)
+
+### Market Maps — switchable heatmap layers
+Asking prices, transaction prices and pricing spread on one map, toggled by layer.
+
+![Market Maps](screenshots/maps.png)
+
+### Transaction Intelligence
+Median/average transaction prices, volume, liquidity and per-district breakdown.
+
+![Transactions](screenshots/transactions.png)
+
+| Office Market | Residential Market | Watchlist |
+|---|---|---|
+| ![Office](screenshots/office_market.png) | ![Residential](screenshots/residential_market.png) | ![Watchlist](screenshots/watchlist.png) |
 
 ---
 
