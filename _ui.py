@@ -171,6 +171,32 @@ def inject_css():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 
+def has_demo_transactions() -> bool:
+    """True jeśli w bazie są poglądowe (nie-realne) dane transakcyjne."""
+    try:
+        from database import get_conn
+        with get_conn() as c:
+            r = c.execute(
+                "SELECT COUNT(*) n FROM transactions "
+                "WHERE source LIKE 'demo%' OR source LIKE 'fixture%'"
+            ).fetchone()
+        return (r["n"] or 0) > 0
+    except Exception:
+        return False
+
+
+def demo_banner(context: str = "dane transakcyjne"):
+    """Spójne ostrzeżenie: pokazywane wartości oparte są na danych DEMO (poglądowych)."""
+    if not has_demo_transactions():
+        return
+    st.markdown(
+        f'<div style="background:#2a2410;border:1px solid #c9a84c;border-radius:6px;'
+        f'padding:8px 14px;margin-bottom:14px;font-size:12px;color:#c9a84c;">'
+        f'⚠️ <b>DANE DEMO</b> — {context} oparte na zbiorze poglądowym (syntetycznym), '
+        f'nie na realnym rejestrze transakcji. Nie wyciągaj wniosków inwestycyjnych z tych liczb.'
+        f'</div>', unsafe_allow_html=True)
+
+
 # ──────────────────────────────────────────────
 # KOMPONENTY
 # ──────────────────────────────────────────────
@@ -198,6 +224,40 @@ def kpi_card(label: str, value, unit: str = "", delta=None, inverse: bool = Fals
         {delta_html}
     </div>"""
     st.markdown(html, unsafe_allow_html=True)
+
+
+def insight_card(label: str, value, unit: str = "", delta=None,
+                 inverse: bool = False, interpretation: str = "",
+                 window: str = "90d"):
+    """Karta KPI z interpretacją: wartość + kierunek + zmiana + 1-zdaniowy sens.
+
+    delta: % zmiana (None = brak danych porównawczych).
+    inverse: True gdy spadek jest dobry (np. liczba ofert konkurencji).
+    interpretation: krótki tekst "co to znaczy" (opcjonalny).
+    """
+    val_str = f"{value:,.0f}".replace(",", " ") if isinstance(value, (int, float)) and abs(value) >= 100 else (
+        f"{value:.2f}" if isinstance(value, float) else str(value) if value is not None else "—"
+    )
+
+    if delta is not None:
+        arrow = "↑" if delta > 0 else ("↓" if delta < 0 else "→")
+        good = (delta > 0 and not inverse) or (delta < 0 and inverse)
+        color = CLR_POSITIVE if good else (CLR_NEGATIVE if delta != 0 else CLR_MUTED)
+        delta_html = (f'<span style="color:{color};font-size:13px;font-weight:600;">'
+                      f'{arrow} {abs(delta):.1f}% <span style="color:{CLR_MUTED};font-weight:400;">vs {window}</span></span>')
+    else:
+        delta_html = f'<span style="color:{CLR_MUTED};font-size:12px;">brak danych porównawczych</span>'
+
+    interp_html = (f'<div style="font-size:11px;color:{CLR_MUTED};margin-top:8px;line-height:1.4;">{interpretation}</div>'
+                   if interpretation else "")
+
+    st.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-label">{label}</div>
+        <div class="kpi-value">{val_str}<span style="font-size:13px;color:{CLR_MUTED};font-weight:400;font-family:'DM Sans';"> {unit}</span></div>
+        <div style="margin-top:6px;">{delta_html}</div>
+        {interp_html}
+    </div>""", unsafe_allow_html=True)
 
 
 def health_score_widget(data: dict, module_color: str = CLR_GOLD):

@@ -45,6 +45,8 @@ from analytics import (
     get_invest_units_summary, get_sales_velocity,
     compute_residential_health_score, get_residential_kpis_with_deltas,
     get_developers_table, get_watchlist_ids,
+    get_pricing_kpis, get_transaction_kpis, compute_liquidity_score,
+    compute_project_health_score,
 )
 from _ui import (
     inject_css, page_header, kpi_card, health_score_widget,
@@ -85,55 +87,101 @@ if "project_id" in st.query_params:
     proj_name = proj_df.iloc[0]["name"] if not proj_df.empty else pid
     page_header(proj_name, "Project Profile", color=CLR_RESI)
 
+    # ── Meta projektu (kompaktowo) ────────────────
     if not proj_df.empty:
         row = proj_df.iloc[0]
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: kpi_card("Deweloper",    row.get("developer") or "—",  unit="")
-        with c2: kpi_card("Lokalizacja",  row.get("subdistrict") or "—", unit="")
-        with c3: kpi_card("Adres",        (row.get("address") or "—")[:30], unit="")
-        with c4: kpi_card("Scrapowany od", str(row.get("first_seen","—"))[:10], unit="")
+        st.markdown(
+            f'<div style="font-size:12px;color:{CLR_MUTED};margin-bottom:14px;">'
+            f'<b style="color:{CLR_TEXT};">{row.get("developer") or "—"}</b> · '
+            f'{row.get("subdistrict") or "—"} · {(row.get("address") or "—")[:40]} · '
+            f'śledzony od {str(row.get("first_seen","—"))[:10]}</div>',
+            unsafe_allow_html=True)
 
-    if units_df is not None and not units_df.empty:
-        active_u = units_df[units_df["is_active"] == 1]
+    active_u = units_df[units_df["is_active"] == 1] if (units_df is not None and not units_df.empty) else pd.DataFrame()
+
+    # ── 1. PROJECT HEALTH SCORE + składowe ────────
+    try:
+        phs = compute_project_health_score(pid)
+    except Exception:
+        phs = None
+
+    if phs:
+        hc1, hc2 = st.columns([1, 2.4])
+        with hc1:
+            health_score_widget(
+                {"score": phs["score"], "label": phs["label"],
+                 "components": phs["components"]},
+                CLR_RESI,
+            )
+        with hc2:
+            section_header("Składowe oceny projektu",
+                           "Pricing · Velocity · Inventory · Transaction Context")
+            comp = phs["components"]
+            notes = phs["notes"]
+            pc = st.columns(4)
+            with pc[0]:
+                kpi_card("Pricing", comp["Pricing"], unit="/25 pkt")
+            with pc[1]:
+                kpi_card("Velocity", comp["Velocity"], unit="/25 pkt")
+            with pc[2]:
+                kpi_card("Inventory", comp["Inventory"], unit="/25 pkt")
+            with pc[3]:
+                kpi_card("Tx Context", comp["Tx Context"], unit="/25 pkt")
+            st.caption(
+                f"Sprzedane 30d: {notes['sold_30d']} · Aktywne: {notes['active_units']} · "
+                f"Sell-through: {notes['sell_through_pct'] if notes['sell_through_pct'] is not None else 'n/d'}% · "
+                f"{notes['tx_context']}")
         divider()
+
+    # ── 2. KLUCZOWE KPI ───────────────────────────
+    if not active_u.empty:
         ku1, ku2, ku3, ku4 = st.columns(4)
         with ku1: kpi_card("Dostępne jednostki", len(active_u), unit="mieszkań")
         with ku2: kpi_card("Median cena/m²", round(active_u["price_per_m2"].median()) if not active_u.empty else None, unit="PLN/m²")
         with ku3: kpi_card("Min cena", round((active_u["price_total"].min() or 0)/1000), unit="tys. PLN")
         with ku4: kpi_card("Max cena", round((active_u["price_total"].max() or 0)/1000), unit="tys. PLN")
+        divider()
+
+    # ── 3. TRZY KLUCZOWE TRENDY ───────────────────
+    section_header("Kluczowe trendy", "Inventory · Median Price · Sales Velocity")
+    if snap_df is not None and not snap_df.empty and len(snap_df) >= 2:
+        t1, t2, t3 = st.columns(3, gap="large")
+        with t1:
+            st.markdown(f'<div style="font-size:12px;font-weight:600;color:{CLR_TEXT};margin-bottom:4px;">Inventory Trend</div>', unsafe_allow_html=True)
+            f1 = go.Figure(go.Scatter(
+                x=snap_df["scrape_date"], y=snap_df["units_available"],
+                mode="lines+markers", line=dict(color=CLR_RESI, width=2), fill="tozeroy"))
+            f1.update_layout(height=240, yaxis_title="dostępne")
+            st.plotly_chart(apply_plot_theme(f1), use_container_width=True)
+        with t2:
+            st.markdown(f'<div style="font-size:12px;font-weight:600;color:{CLR_TEXT};margin-bottom:4px;">Median Price Trend</div>', unsafe_allow_html=True)
+            f2 = go.Figure(go.Scatter(
+                x=snap_df["scrape_date"], y=snap_df["median_price_m2"],
+                mode="lines+markers", line=dict(color=CLR_GOLD, width=2)))
+            f2.update_layout(height=240, yaxis_title="PLN/m²")
+            st.plotly_chart(apply_plot_theme(f2), use_container_width=True)
+        with t3:
+            st.markdown(f'<div style="font-size:12px;font-weight:600;color:{CLR_TEXT};margin-bottom:4px;">Sales Velocity Trend</div>', unsafe_allow_html=True)
+            # Velocity = ubytek dostępnych jednostek między snapshotami (sprzedane/okres)
+            sv = snap_df.copy()
+            sv["sold"] = (-sv["units_available"].diff()).clip(lower=0).fillna(0)
+            f3 = go.Figure(go.Bar(x=sv["scrape_date"], y=sv["sold"], marker_color=CLR_OFFICE))
+            f3.update_layout(height=240, yaxis_title="sprzedane/okres")
+            st.plotly_chart(apply_plot_theme(f3), use_container_width=True)
+    else:
+        st.info("Za mało historii snapshotów do wykresów trendów (potrzeba ≥2 dni danych).")
 
     divider()
 
-    # ── Historia i wykresy rozkładu ───────────────
-    top_col, bot_col = st.columns([1, 1])
-
-    with top_col:
-        section_header("Historia dostępności i ceny")
-        if snap_df is not None and not snap_df.empty:
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=snap_df["scrape_date"], y=snap_df["units_available"],
-                name="Dostępne jedn.", marker_color=CLR_RESI, opacity=0.5, yaxis="y2",
-            ))
-            fig.add_trace(go.Scatter(
-                x=snap_df["scrape_date"], y=snap_df["median_price_m2"],
-                name="Median PLN/m²", line=dict(color=CLR_GOLD, width=2),
-            ))
-            fig.update_layout(yaxis2=dict(overlaying="y", side="right", showgrid=False))
-            apply_plot_theme(fig)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Brak historii snapshotów.")
-
-    with bot_col:
-        if units_df is not None and not units_df.empty and not active_u.empty:
+    # ── 4. ADVANCED ANALYTICS (collapsible) ───────
+    if not active_u.empty:
+        colors_rooms = {1: "#e05c5c", 2: "#e0924a", 3: CLR_GOLD, 4: CLR_RESI, 5: "#4a8fb5"}
+        with st.expander("📊 Advanced Analytics — rozkłady, scatter, struktura pokoi", expanded=False):
             section_header("Scatter: metraż vs cena/m²")
             fig2 = go.Figure()
-            colors_rooms = {1: "#e05c5c", 2: "#e0924a", 3: CLR_GOLD, 4: CLR_RESI, 5: "#4a8fb5"}
             for r, grp in active_u.groupby("rooms"):
                 fig2.add_trace(go.Scatter(
-                    x=grp["area_m2"], y=grp["price_per_m2"],
-                    mode="markers",
+                    x=grp["area_m2"], y=grp["price_per_m2"], mode="markers",
                     name=f"{int(r) if r else '?'} pok." if r else "?",
                     marker=dict(size=8, color=colors_rooms.get(int(r) if r else 0, CLR_MUTED), opacity=0.8),
                     text=grp["title"].str.replace(r".*—\s*", "", regex=True),
@@ -143,62 +191,43 @@ if "project_id" in st.query_params:
             apply_plot_theme(fig2)
             st.plotly_chart(fig2, use_container_width=True)
 
-    divider()
+            h1, h2 = st.columns(2)
+            with h1:
+                section_header("Rozkład cen (PLN/m²)")
+                fig3 = go.Figure(go.Histogram(x=active_u["price_per_m2"].dropna(),
+                                              nbinsx=15, marker_color=CLR_RESI, opacity=0.8))
+                fig3.update_layout(xaxis_title="PLN/m²", yaxis_title="Liczba jedn.", bargap=0.05)
+                apply_plot_theme(fig3)
+                st.plotly_chart(fig3, use_container_width=True)
+            with h2:
+                section_header("Rozkład metraży (m²)")
+                fig4 = go.Figure(go.Histogram(x=active_u["area_m2"].dropna(),
+                                              nbinsx=15, marker_color=CLR_GOLD, opacity=0.8))
+                fig4.update_layout(xaxis_title="m²", yaxis_title="Liczba jedn.", bargap=0.05)
+                apply_plot_theme(fig4)
+                st.plotly_chart(fig4, use_container_width=True)
 
-    # ── Rozkłady histogramowe ─────────────────────
-    if units_df is not None and not units_df.empty and not active_u.empty:
-        h1, h2 = st.columns(2)
-        with h1:
-            section_header("Rozkład cen (PLN/m²)")
-            fig3 = go.Figure(go.Histogram(
-                x=active_u["price_per_m2"].dropna(),
-                nbinsx=15, marker_color=CLR_RESI, opacity=0.8,
-            ))
-            fig3.update_layout(xaxis_title="PLN/m²", yaxis_title="Liczba jedn.", bargap=0.05)
-            apply_plot_theme(fig3)
-            st.plotly_chart(fig3, use_container_width=True)
-
-        with h2:
-            section_header("Rozkład metraży (m²)")
-            fig4 = go.Figure(go.Histogram(
-                x=active_u["area_m2"].dropna(),
-                nbinsx=15, marker_color=CLR_GOLD, opacity=0.8,
-            ))
-            fig4.update_layout(xaxis_title="m²", yaxis_title="Liczba jedn.", bargap=0.05)
-            apply_plot_theme(fig4)
-            st.plotly_chart(fig4, use_container_width=True)
-
-        divider()
-
-        # ── Rozkład wg liczby pokoi ───────────────
-        section_header("Struktura oferty wg liczby pokoi")
-        rooms_cnt = active_u["rooms"].value_counts().sort_index()
-        if not rooms_cnt.empty:
-            rc1, rc2 = st.columns([1, 2])
-            with rc1:
-                fig5 = go.Figure(go.Pie(
-                    labels=[f"{int(r) if r else '?'} pok." for r in rooms_cnt.index],
-                    values=rooms_cnt.values,
-                    hole=0.45,
-                    marker_colors=[colors_rooms.get(int(r) if r else 0, CLR_MUTED) for r in rooms_cnt.index],
-                ))
-                fig5.update_layout(showlegend=True, margin=dict(l=0, r=0, t=20, b=0))
-                apply_plot_theme(fig5)
-                st.plotly_chart(fig5, use_container_width=True)
-            with rc2:
-                # Box plot cen wg pokoi
-                fig6 = go.Figure()
-                for r, grp in active_u.groupby("rooms"):
-                    lbl = f"{int(r) if r else '?'} pok."
-                    fig6.add_trace(go.Box(
-                        y=grp["price_per_m2"].dropna(),
-                        name=lbl,
-                        marker_color=colors_rooms.get(int(r) if r else 0, CLR_MUTED),
-                        boxmean=True,
-                    ))
-                fig6.update_layout(yaxis_title="PLN/m²", showlegend=False)
-                apply_plot_theme(fig6)
-                st.plotly_chart(fig6, use_container_width=True)
+            section_header("Struktura oferty wg liczby pokoi")
+            rooms_cnt = active_u["rooms"].value_counts().sort_index()
+            if not rooms_cnt.empty:
+                rc1, rc2 = st.columns([1, 2])
+                with rc1:
+                    fig5 = go.Figure(go.Pie(
+                        labels=[f"{int(r) if r else '?'} pok." for r in rooms_cnt.index],
+                        values=rooms_cnt.values, hole=0.45,
+                        marker_colors=[colors_rooms.get(int(r) if r else 0, CLR_MUTED) for r in rooms_cnt.index]))
+                    fig5.update_layout(showlegend=True, margin=dict(l=0, r=0, t=20, b=0))
+                    apply_plot_theme(fig5)
+                    st.plotly_chart(fig5, use_container_width=True)
+                with rc2:
+                    fig6 = go.Figure()
+                    for r, grp in active_u.groupby("rooms"):
+                        fig6.add_trace(go.Box(
+                            y=grp["price_per_m2"].dropna(), name=f"{int(r) if r else '?'} pok.",
+                            marker_color=colors_rooms.get(int(r) if r else 0, CLR_MUTED), boxmean=True))
+                    fig6.update_layout(yaxis_title="PLN/m²", showlegend=False)
+                    apply_plot_theme(fig6)
+                    st.plotly_chart(fig6, use_container_width=True)
 
     divider()
 
@@ -283,6 +312,42 @@ with tabs[0]:
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Za mało danych trendowych.")
+
+        # ── Transaction Context (Phase 7) ──────────
+        divider()
+        section_header("Kontekst transakcyjny",
+                       "Ceny ofertowe vs rzeczywiste transakcje — bez przechodzenia do innego modułu")
+        try:
+            pk = get_pricing_kpis("residential", window_days=90)
+            tk = get_transaction_kpis("residential", window_days=90)
+            liq = compute_liquidity_score("residential")
+        except Exception:
+            pk, tk, liq = {}, {}, {}
+
+        tc = st.columns(5)
+        with tc[0]:
+            kpi_card("Median Asking", pk.get("median_asking"), unit="PLN/m² (oferty)")
+        with tc[1]:
+            kpi_card("Median Transaction", pk.get("median_transaction") or tk.get("median_price_per_m2"),
+                     unit="PLN/m² (transakcje)")
+        with tc[2]:
+            sp = pk.get("spread_pct")
+            kpi_card("Spread", f"{sp:+.1f}" if sp is not None else None, unit="%")
+        with tc[3]:
+            ni = pk.get("negotiation_index")
+            kpi_card("Negotiation Index", f"{ni:+.1f}" if ni is not None else None, unit="%")
+        with tc[4]:
+            kpi_card("Liquidity Score", liq.get("score"),
+                     unit=f"/100 {liq.get('label','')}" if liq.get("score") is not None else "n/d")
+
+        nbp = pk.get("nbp_benchmark") if pk else None
+        if (pk.get("spread_pct") is None) and nbp:
+            st.caption(f"⚠️ Brak wystarczających danych transakcyjnych na poziomie dzielnic — "
+                       f"benchmark NBP (Warszawa): transakcje {nbp['transaction']:.0f} vs asking "
+                       f"{nbp['asking']:.0f} PLN/m² ({nbp['spread_pct']:+.1f}%). "
+                       f"Pełna analiza w module Pricing Intelligence.")
+        else:
+            st.caption("Pełna analiza spreadu per dzielnica i historia w module Pricing Intelligence.")
 
 # ── TAB 1: LISTINGS ───────────────────────────
 with tabs[1]:

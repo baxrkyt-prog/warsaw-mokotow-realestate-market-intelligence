@@ -36,13 +36,37 @@ echo "[2/3] Gotowe."
 
 # 3. Deweloperzy
 echo ""
-echo "[3/3] Inwestycje deweloperskie (scraper_developer.py)..."
+echo "[3/6] Inwestycje deweloperskie (scraper_developer.py)..."
 "$VENV" "$DIR/scraper_developer.py" $SHOW_BROWSER 2>&1 | tee "$LOG_DIR/developer_$DATE.log"
-echo "[3/3] Gotowe."
+echo "[3/6] Gotowe."
+
+# 4. NBP BaRN — kwartalne ceny transakcyjne (darmowe; plik zmienia się raz na kwartał,
+#    ale pobranie jest tanie i idempotentne)
+echo ""
+echo "[4/6] NBP BaRN (transaction benchmark)..."
+(cd "$DIR" && "$VENV" -m collectors run nbp_barn) 2>&1 | tee "$LOG_DIR/nbp_$DATE.log" || \
+    echo "[4/6] WARN: NBP niedostępne — kontynuuję (poprzednie dane w bazie zostają)"
+echo "[4/6] Gotowe."
+
+# 5. Geo backfill nowych ofert + materializacja spreadów
+echo ""
+echo "[5/6] Geo backfill + Pricing Intelligence (spready)..."
+(cd "$DIR" && "$VENV" -m collectors run backfill_listings_geo --asset-class all --geocode-limit 30) \
+    2>&1 | tee "$LOG_DIR/backfill_$DATE.log" || echo "[5/6] WARN: backfill częściowo nieudany"
+(cd "$DIR" && "$VENV" -c "from analytics import materialize_pricing_spreads; print(materialize_pricing_spreads())") \
+    2>&1 | tee "$LOG_DIR/spreads_$DATE.log"
+echo "[5/6] Gotowe."
+
+# 6. Alerty (w tym pricingowe)
+echo ""
+echo "[6/6] Alerty..."
+(cd "$DIR" && "$VENV" -c "from analytics import check_and_fire_alerts; fired = check_and_fire_alerts(); print(f'{len(fired)} alertów')") \
+    2>&1 | tee "$LOG_DIR/alerts_$DATE.log"
+echo "[6/6] Gotowe."
 
 echo ""
 echo "========================================"
-echo " Scrape zakończony: $(date)"
+echo " Pipeline zakończony: $(date)"
 echo " Logi: $LOG_DIR/"
 echo "========================================"
 

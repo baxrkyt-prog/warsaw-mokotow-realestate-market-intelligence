@@ -9,7 +9,7 @@ import plotly.express as px
 import pandas as pd
 
 from analytics import (
-    get_office_summary, get_office_trend, get_competitive_set,
+    get_office_summary, get_office_trend, get_competitive_set, get_competitive_position,
     get_office_zone_summary, get_office_forecast,
     compute_office_health_score, get_office_kpis_with_deltas,
     get_building_history, get_building_units,
@@ -292,42 +292,63 @@ with tabs[1]:
 
 # ── TAB 2: COMPETITION ────────────────────────
 with tabs[2]:
-    if not data_ok or compset is None or compset.empty:
-        st.info("Brak danych competitive set.")
-    else:
-        section_header("Competitive Set", "Ocean Plaza vs Curtis Plaza vs New City vs Marynarska BP")
+    section_header("Ocean Plaza vs Market",
+                   "Pozycja konkurencyjna względem Curtis Plaza, New City, Marynarska BP")
 
-        # KPI comparison table
+    cpos = get_competitive_position()
+    if cpos is None or cpos.empty:
+        st.info("Brak danych competitive set — za mało ofert z rozpoznanym budynkiem.")
+    else:
+        # Tabela pozycji konkurencyjnej z interpretacją
+        disp = cpos.copy()
+
+        def pos_emoji(p):
+            return p
+
+        disp["Czynsz PLN/m²/mc"] = disp["rent_now"].round(0)
+        disp["Zmiana czynszu"] = disp["rent_chg_pct"].apply(
+            lambda v: f"{v:+.1f}%" if pd.notna(v) else "—")
+        disp["Aktywne oferty"] = disp["active_offers"]
+        disp["Zmiana podaży 30d"] = disp["supply_chg"].apply(lambda v: f"{v:+d}")
+        disp["Dostępna pow. m²"] = disp["available_area"].round(0)
+        disp["Pozycja"] = disp["position"]
+        disp["Budynek"] = disp["building"]
+
         st.dataframe(
-            compset.rename(columns={
-                "building": "Budynek",
-                "active_units": "Aktywne oferty",
-                "avg_price_m2": "Avg PLN/m²",
-                "min_price_m2": "Min PLN/m²",
-                "max_price_m2": "Max PLN/m²",
-                "total_area_m2": "Dostępna pow. m²",
-            }),
-            use_container_width=True,
-            hide_index=True,
+            disp[["Budynek", "Czynsz PLN/m²/mc", "Zmiana czynszu", "Aktywne oferty",
+                  "Zmiana podaży 30d", "Dostępna pow. m²", "Pozycja"]],
+            use_container_width=True, hide_index=True,
         )
 
+        # Interpretacja pozycji Ocean Plaza
+        op = cpos[cpos["building"].str.lower().str.contains("ocean")]
+        if not op.empty:
+            op_row = op.iloc[0]
+            pos = op_row["position"]
+            if "gaining" in pos:
+                msg, color = "Ocean Plaza umacnia pozycję konkurencyjną — czynsz stabilny/rosnący przy nierosnącej podaży.", CLR_RESI
+            elif "losing" in pos:
+                msg, color = "Ocean Plaza traci pozycję — spadek czynszu lub rosnąca własna podaż względem rynku.", CLR_ALERT
+            else:
+                msg, color = "Ocean Plaza utrzymuje stabilną pozycję względem konkurencji.", CLR_GOLD
+            st.markdown(f"""
+            <div style="background:{CLR_SURFACE};border-left:3px solid {color};border-radius:6px;
+                        padding:12px 18px;margin-top:12px;font-size:13px;color:{CLR_TEXT};">
+                <b style="color:{color};">{pos}</b> — {msg}
+            </div>
+            """, unsafe_allow_html=True)
+
         divider()
-        section_header("Porównanie stawek")
-        if "building" in compset.columns and "avg_price_m2" in compset.columns:
-            fig = go.Figure(go.Bar(
-                x=compset["building"],
-                y=compset["avg_price_m2"],
-                marker_color=[CLR_GOLD if "ocean" in b.lower() else CLR_OFFICE
-                              for b in compset["building"]],
-                text=compset["avg_price_m2"].round(0),
-                textposition="outside",
-            ))
-            fig.update_layout(
-                xaxis_title="", yaxis_title="PLN/m²/mc",
-                **{k: v for k, v in apply_plot_theme(fig).layout.to_plotly_json().items()},
-            )
-            apply_plot_theme(fig)
-            st.plotly_chart(fig, use_container_width=True)
+        section_header("Porównanie stawek czynszu")
+        fig = go.Figure(go.Bar(
+            x=cpos["building"], y=cpos["rent_now"],
+            marker_color=[CLR_GOLD if "ocean" in b.lower() else CLR_OFFICE
+                          for b in cpos["building"]],
+            text=cpos["rent_now"].round(0), textposition="outside",
+        ))
+        fig.update_layout(xaxis_title="", yaxis_title="PLN/m²/mc")
+        apply_plot_theme(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
 # ── TAB 3: BUILDINGS ──────────────────────────
 with tabs[3]:
