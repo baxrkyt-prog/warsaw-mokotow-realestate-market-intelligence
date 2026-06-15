@@ -64,6 +64,9 @@ echo "[5/6] Geo backfill + Pricing Intelligence (spready)..."
     2>&1 | tee "$LOG_DIR/spreads_$DATE.log"
 (cd "$DIR" && "$VENV" -c "from analytics import record_lifecycle_snapshot; print(record_lifecycle_snapshot())") \
     2>&1 | tee "$LOG_DIR/lifecycle_$DATE.log"
+# Weryfikacja delistingów pod URL — usuwa fałszywe (oferty żywe, zgubione przez scraper)
+(cd "$DIR" && "$VENV" -m collectors run verify_delistings --asset-class all) \
+    2>&1 | tee "$LOG_DIR/verify_delist_$DATE.log" || echo "WARN: weryfikacja delistingów nieudana"
 echo "[5/6] Gotowe."
 
 # 6. Alerty (w tym pricingowe)
