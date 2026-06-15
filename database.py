@@ -504,6 +504,17 @@ def init_db():
 
             CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(listing_status);
             CREATE INDEX IF NOT EXISTS idx_listings_delisted ON listings(delisted_date);
+
+            -- Dzienny snapshot metryk lifecycle (baza porównawcza dla alertów DOM/turnover)
+            CREATE TABLE IF NOT EXISTS lifecycle_snapshots (
+                snapshot_date   TEXT NOT NULL,
+                asset_class     TEXT NOT NULL,
+                median_dom      REAL,
+                turnover_pct    REAL,
+                stale_count     INTEGER,
+                active          INTEGER,
+                PRIMARY KEY (snapshot_date, asset_class)
+            );
         """)
 
         # Seed taksonomii dzielnic (idempotentne)

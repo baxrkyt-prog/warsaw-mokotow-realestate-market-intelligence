@@ -55,6 +55,8 @@ echo "[5/6] Geo backfill + Pricing Intelligence (spready)..."
     2>&1 | tee "$LOG_DIR/backfill_$DATE.log" || echo "[5/6] WARN: backfill częściowo nieudany"
 (cd "$DIR" && "$VENV" -c "from analytics import materialize_pricing_spreads; print(materialize_pricing_spreads())") \
     2>&1 | tee "$LOG_DIR/spreads_$DATE.log"
+(cd "$DIR" && "$VENV" -c "from analytics import record_lifecycle_snapshot; print(record_lifecycle_snapshot())") \
+    2>&1 | tee "$LOG_DIR/lifecycle_$DATE.log"
 echo "[5/6] Gotowe."
 
 # 6. Alerty (w tym pricingowe)

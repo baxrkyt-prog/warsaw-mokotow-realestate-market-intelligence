@@ -173,6 +173,53 @@ def check_and_fire_alerts() -> list:
                     "value": round(last_ni - first_ni, 2), "threshold": -3.0, "is_new": 1
                 })
 
+        # ── Phase 10: alerty lifecycle (DOM / turnover / stale) ─────────
+        for ac in ("office", "residential"):
+            curr = conn.execute("""
+                SELECT median_dom, turnover_pct, stale_count, active
+                FROM lifecycle_snapshots WHERE asset_class=?
+                ORDER BY snapshot_date DESC LIMIT 1
+            """, (ac,)).fetchone()
+            base = conn.execute("""
+                SELECT median_dom, turnover_pct, stale_count, active
+                FROM lifecycle_snapshots
+                WHERE asset_class=? AND snapshot_date <= date('now','-25 days')
+                ORDER BY snapshot_date DESC LIMIT 1
+            """, (ac,)).fetchone()
+            if not curr or not base:
+                continue
+            label = "biur" if ac == "office" else "mieszkań"
+
+            # Median DOM wzrost >20% (oferty wiszą dłużej — wolniejszy rynek)
+            if curr["median_dom"] and base["median_dom"] and base["median_dom"] > 0:
+                chg = (curr["median_dom"] - base["median_dom"]) / base["median_dom"]
+                if chg > 0.20:
+                    fired.append({
+                        "alert_ts": now, "alert_type": "dom_increase", "asset_class": ac,
+                        "message": f"Median DOM {label} wzrósł o {chg*100:.0f}% "
+                                   f"({base['median_dom']:.0f}→{curr['median_dom']:.0f} dni)",
+                        "value": round(chg*100, 1), "threshold": 20.0, "is_new": 1})
+
+            # Turnover deterioration (spadek >20% — rynek mniej płynny)
+            if curr["turnover_pct"] is not None and base["turnover_pct"]:
+                tchg = (curr["turnover_pct"] - base["turnover_pct"]) / base["turnover_pct"]
+                if tchg < -0.20:
+                    fired.append({
+                        "alert_ts": now, "alert_type": "turnover_deterioration", "asset_class": ac,
+                        "message": f"Turnover {label} spadł o {abs(tchg)*100:.0f}% "
+                                   f"({base['turnover_pct']:.0f}%→{curr['turnover_pct']:.0f}%)",
+                        "value": round(tchg*100, 1), "threshold": -20.0, "is_new": 1})
+
+            # Stale surge (wzrost udziału stale o >30%)
+            if curr["stale_count"] and base["stale_count"] and base["stale_count"] > 0:
+                schg = (curr["stale_count"] - base["stale_count"]) / base["stale_count"]
+                if schg > 0.30:
+                    fired.append({
+                        "alert_ts": now, "alert_type": "stale_surge", "asset_class": ac,
+                        "message": f"Liczba stale ofert {label} wzrosła o {schg*100:.0f}% "
+                                   f"({base['stale_count']}→{curr['stale_count']})",
+                        "value": round(schg*100, 1), "threshold": 30.0, "is_new": 1})
+
         for alert in fired:
             conn.execute("""
                 INSERT INTO alerts_log

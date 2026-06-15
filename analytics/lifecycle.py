@@ -188,6 +188,109 @@ def get_stale_listings(asset_class: str = "residential", limit: int = 100) -> pd
     return df
 
 
+def record_lifecycle_snapshot(snapshot_date: str | None = None) -> dict:
+    """Zapisuje dzienny snapshot median DOM / turnover / stale per asset_class.
+    Baza porównawcza dla alertów lifecycle. Idempotentny (PK date+asset)."""
+    from datetime import datetime, timezone
+    snapshot_date = snapshot_date or datetime.now(timezone.utc).date().isoformat()
+    out = {}
+    with get_conn() as conn:
+        for ac in ("office", "residential"):
+            dom = get_dom_stats(ac)
+            turn = get_turnover_rate(ac, window_days=30)["turnover_pct"].get(30)
+            stale = len(get_stale_listings(ac, limit=10000))
+            where, _ = _asset_filter(ac)
+            active = conn.execute(f"SELECT COUNT(*) c FROM listings WHERE {where} AND is_active=1").fetchone()["c"]
+            conn.execute("""
+                INSERT OR REPLACE INTO lifecycle_snapshots
+                    (snapshot_date, asset_class, median_dom, turnover_pct, stale_count, active)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (snapshot_date, ac, dom["median_dom"], turn, stale, active))
+            out[ac] = {"median_dom": dom["median_dom"], "turnover": turn,
+                       "stale": stale, "active": active}
+    return out
+
+
+def get_building_lifecycle() -> pd.DataFrame:
+    """Per budynek biurowy: median DOM (aktywne), nowe 30d, delisted 30d, turnover."""
+    from database import COMPETITIVE_SET
+    with get_conn() as conn:
+        active = pd.read_sql_query(f"""
+            SELECT building_name,
+                   dom_days({_DOM_START}, NULL) AS dom
+            FROM listings
+            WHERE asset_class='office' AND is_active=1 AND building_name IS NOT NULL
+              AND {_DOM_START} IS NOT NULL
+        """, conn)
+        flow = pd.read_sql_query(f"""
+            SELECT building_name,
+                   SUM(CASE WHEN {_DOM_START} >= date('now','-30 days') THEN 1 ELSE 0 END) AS new_30,
+                   SUM(CASE WHEN is_active=0 AND delisted_date >= date('now','-30 days') THEN 1 ELSE 0 END) AS delisted_30,
+                   SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active
+            FROM listings
+            WHERE asset_class='office' AND building_name IS NOT NULL
+            GROUP BY building_name
+        """, conn)
+
+    if flow.empty:
+        return pd.DataFrame()
+
+    # mapowanie na competitive set
+    def to_comp(name):
+        nl = (name or "").lower()
+        for bname, kws in COMPETITIVE_SET.items():
+            if any(kw in nl for kw in kws):
+                return bname
+        return None
+
+    flow["building"] = flow["building_name"].apply(to_comp)
+    flow = flow[flow["building"].notna()]
+    if flow.empty:
+        return pd.DataFrame()
+
+    med = active.copy()
+    med["building"] = med["building_name"].apply(to_comp)
+    med = med[med["building"].notna()]
+    med_dom = med.groupby("building")["dom"].median().rename("median_dom")
+
+    agg = flow.groupby("building").agg(
+        new_30=("new_30", "sum"),
+        delisted_30=("delisted_30", "sum"),
+        active=("active", "sum"),
+    ).reset_index().merge(med_dom, on="building", how="left")
+    agg["turnover_pct"] = (agg["delisted_30"] / agg["active"].clip(lower=1) * 100).round(1)
+    agg["median_dom"] = agg["median_dom"].round(0)
+    return agg.sort_values("median_dom")
+
+
+def get_project_lifecycle(project_id: str) -> dict:
+    """Per projekt deweloperski: median DOM jednostek, nowe/delisted 30d, turnover."""
+    with get_conn() as conn:
+        med = conn.execute(f"""
+            SELECT dom_days({_DOM_START}, NULL) AS dom FROM listings
+            WHERE parent_project_id=? AND transaction_type='invest_unit'
+              AND is_active=1 AND {_DOM_START} IS NOT NULL
+        """, (project_id,)).fetchall()
+        flow = conn.execute(f"""
+            SELECT
+                SUM(CASE WHEN {_DOM_START} >= date('now','-30 days') THEN 1 ELSE 0 END) AS new_30,
+                SUM(CASE WHEN is_active=0 AND delisted_date >= date('now','-30 days') THEN 1 ELSE 0 END) AS delisted_30,
+                SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active
+            FROM listings WHERE parent_project_id=? AND transaction_type='invest_unit'
+        """, (project_id,)).fetchone()
+    doms = sorted([r["dom"] for r in med if r["dom"] is not None])
+    median_dom = doms[len(doms)//2] if doms else None
+    active = flow["active"] or 0
+    delisted_30 = flow["delisted_30"] or 0
+    return {
+        "median_dom": median_dom,
+        "new_30": flow["new_30"] or 0,
+        "delisted_30": delisted_30,
+        "active": active,
+        "turnover_pct": round(delisted_30 / max(active, 1) * 100, 1) if active else None,
+    }
+
+
 def get_lifecycle_kpis(asset_class: str = "residential") -> dict:
     """Zbiorczy zestaw KPI dla strony Lifecycle."""
     where, _ = _asset_filter(asset_class)

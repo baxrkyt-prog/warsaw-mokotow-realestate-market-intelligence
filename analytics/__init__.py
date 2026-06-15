@@ -104,6 +104,7 @@ from .confidence import confidence_level, winsorize
 from .lifecycle import (
     get_dom_stats, get_turnover_rate, get_delisting_kpis, get_delisting_trend,
     get_listing_flow, get_lifecycle_funnel, get_stale_listings, get_lifecycle_kpis,
+    get_building_lifecycle, get_project_lifecycle, record_lifecycle_snapshot,
 )
 
 # Zone + Narrative (UX redesign)
@@ -149,6 +150,7 @@ __all__ = [
     # lifecycle
     "get_dom_stats", "get_turnover_rate", "get_delisting_kpis", "get_delisting_trend",
     "get_listing_flow", "get_lifecycle_funnel", "get_stale_listings", "get_lifecycle_kpis",
+    "get_building_lifecycle", "get_project_lifecycle", "record_lifecycle_snapshot",
     # zone + narrative (UX)
     "get_zone_intelligence", "get_market_deltas", "get_what_changed",
     "generate_market_narrative", "generate_market_brief", "generate_market_brief_pdf",

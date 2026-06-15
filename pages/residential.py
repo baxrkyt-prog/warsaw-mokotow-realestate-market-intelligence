@@ -133,6 +133,21 @@ if "project_id" in st.query_params:
                 f"{notes['tx_context']}")
         divider()
 
+    # ── 1b. LIFECYCLE projektu (DOM / turnover) ───
+    try:
+        from analytics import get_project_lifecycle
+        plc = get_project_lifecycle(pid)
+    except Exception:
+        plc = None
+    if plc and plc["active"]:
+        section_header("Lifecycle projektu", "tempo rotacji jednostek")
+        lc = st.columns(4)
+        with lc[0]: kpi_card("Median DOM", plc["median_dom"], unit="dni na rynku")
+        with lc[1]: kpi_card("Nowe (30d)", plc["new_30"], unit="jednostek")
+        with lc[2]: kpi_card("Sprzedane (30d)", plc["delisted_30"], unit="jednostek")
+        with lc[3]: kpi_card("Turnover", plc["turnover_pct"], unit="% / 30d")
+        divider()
+
     # ── 2. KLUCZOWE KPI ───────────────────────────
     if not active_u.empty:
         ku1, ku2, ku3, ku4 = st.columns(4)

@@ -314,11 +314,25 @@ with tabs[2]:
         disp["Pozycja"] = disp["position"]
         disp["Budynek"] = disp["building"]
 
-        st.dataframe(
-            disp[["Budynek", "Czynsz PLN/m²/mc", "Zmiana czynszu", "Aktywne oferty",
-                  "Zmiana podaży 30d", "Dostępna pow. m²", "Pozycja"]],
-            use_container_width=True, hide_index=True,
-        )
+        # Lifecycle: Median DOM + Turnover per budynek (które leasują się szybciej)
+        from analytics import get_building_lifecycle
+        blc = get_building_lifecycle()
+        if not blc.empty:
+            disp = disp.merge(
+                blc[["building", "median_dom", "turnover_pct"]], on="building", how="left")
+            disp["Median DOM"] = disp["median_dom"].apply(
+                lambda v: f"{v:.0f} dni" if pd.notna(v) else "—")
+            disp["Turnover"] = disp["turnover_pct"].apply(
+                lambda v: f"{v:.0f}%" if pd.notna(v) else "—")
+            cols = ["Budynek", "Czynsz PLN/m²/mc", "Zmiana czynszu", "Aktywne oferty",
+                    "Median DOM", "Turnover", "Zmiana podaży 30d", "Pozycja"]
+        else:
+            cols = ["Budynek", "Czynsz PLN/m²/mc", "Zmiana czynszu", "Aktywne oferty",
+                    "Zmiana podaży 30d", "Dostępna pow. m²", "Pozycja"]
+
+        st.dataframe(disp[cols], use_container_width=True, hide_index=True)
+        st.caption("Median DOM = ile dni oferty wiszą na rynku · Turnover = % zdjętych w 30d. "
+                   "Niższy DOM + wyższy turnover = budynek leasuje się szybciej.")
 
         # Interpretacja pozycji Ocean Plaza
         op = cpos[cpos["building"].str.lower().str.contains("ocean")]

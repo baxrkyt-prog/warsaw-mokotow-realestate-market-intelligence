@@ -357,9 +357,17 @@ def compute_liquidity_score(property_type: str = "residential",
 
     # A. Transaction velocity
     a = _clamp((tx_now / max(new_w, 1)) * 25)
-    # B. Inventory turnover
-    tx_per_day = tx_now / window_days
-    days_inv = (active / tx_per_day) if tx_per_day > 0 else 300
+    # B. Inventory turnover — preferuj realny median DOM (lifecycle); fallback: stock/sales rate.
+    #    DOM 0d → 25 pkt, ≥300d → 0 pkt. DOM to bezpośrednia miara czasu na rynku.
+    from .lifecycle import get_dom_stats
+    dom = get_dom_stats(property_type if property_type in ("office", "residential") else "residential")
+    if dom.get("real_dom") and dom.get("median_dom") is not None:
+        days_inv = dom["median_dom"]
+        dom_source = "median_dom"
+    else:
+        tx_per_day = tx_now / window_days
+        days_inv = (active / tx_per_day) if tx_per_day > 0 else 300
+        dom_source = "stock/sales"
     b = _clamp(25 - (days_inv / 300) * 25)
     # C. Velocity trend
     delta = (tx_now - tx_prev) / max(tx_prev, 1)
@@ -380,7 +388,7 @@ def compute_liquidity_score(property_type: str = "residential",
         },
         "inputs": {"tx_count": tx_now, "tx_prev": tx_prev,
                    "active_listings": active, "new_listings": new_w,
-                   "days_of_inventory": round(days_inv, 1)},
+                   "days_of_inventory": round(days_inv, 1), "dom_source": dom_source},
     }
 
 
