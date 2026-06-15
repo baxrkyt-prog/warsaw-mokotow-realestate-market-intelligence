@@ -127,7 +127,7 @@ with d2:
     section_header("Stale Listings", "oferty starsze niż 2× mediana DOM — kandydaci do analizy")
     stale = get_stale_listings(ac, limit=100)
     if stale.empty:
-        st.caption("Brak ofert spełniających próg „stale" w bieżących danych "
+        st.caption("Brak ofert spełniających próg stale w bieżących danych "
                    "(DOM dojrzewa — wróć gdy historia się nazbiera).")
     else:
         med = dom["median_dom"] or 60
