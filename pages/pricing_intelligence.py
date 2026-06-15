@@ -1,9 +1,9 @@
 """
-pages/pricing_intelligence.py — Pricing Intelligence (Phase 4, flagowy moduł).
+pages/pricing_intelligence.py — Market Liquidity & Pricing.
 
-Odpowiada na pytanie: "Czy rynek jest mocniejszy czy słabszy niż sugerują
-ceny ofertowe?" — spread asking↔transaction, Negotiation Index,
-Liquidity Score, Pricing Pressure Score.
+Zastępuje stary panel "Ceny Transakcyjne" (oparty na demo/RCN).
+Cała logika bazuje WYŁĄCZNIE na danych OFERTOWYCH. Ceny transakcyjne są
+ESTYMOWANE z ofertowych przez parametryzowany Discount Factor (zero demo).
 """
 
 import sys
@@ -16,190 +16,159 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from analytics import (
-    get_pricing_kpis, get_spread_table, get_spread_history,
-    compute_liquidity_score, compute_pricing_pressure_score,
+    get_market_kpis, get_market_overview, get_market_liquidity,
+    get_delisted_by_district, estimate_transaction_price,
+    get_segmentation, get_price_dynamics, DEFAULT_DISCOUNT_FACTOR,
 )
 from _ui import (
     inject_css, page_header, kpi_card, section_header, divider,
-    apply_plot_theme, HEALTH_COLORS, demo_banner,
-    CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_TEXT, CLR_MUTED, CLR_BORDER, CLR_SURFACE,
+    apply_plot_theme, CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_POSITIVE,
+    CLR_TEXT, CLR_MUTED, CLR_BORDER, CLR_SURFACE,
 )
 
-st.set_page_config(
-    page_title="Pricing Intelligence · Ocean Plaza MI",
-    page_icon="📐",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+st.set_page_config(page_title="Market Liquidity & Pricing · Ocean Plaza MI",
+                   page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
 inject_css()
-
-CONF_BADGE = {
-    "high":   ("HIGH",   "#50a870"),
-    "medium": ("MEDIUM", "#c9a84c"),
-    "low":    ("LOW",    "#e0924a"),
-    "suppress": ("n/d",  "#7a7f8e"),
-}
-
-
-def conf_badge(level: str) -> str:
-    label, color = CONF_BADGE.get(level or "suppress", CONF_BADGE["suppress"])
-    return (f'<span style="background:{color}22;color:{color};border:1px solid {color};'
-            f'border-radius:4px;padding:1px 8px;font-size:10px;font-weight:600;">{label}</span>')
-
-
-def score_widget(title: str, data: dict):
-    """Mini-widget dla Liquidity / Pressure score."""
-    score = data.get("score")
-    label = data.get("label", "n/d")
-    color = HEALTH_COLORS.get(label, "#7a7f8e")
-    conf = data.get("confidence", "suppress")
-    score_disp = str(score) if score is not None else "—"
-    comps = data.get("components", {})
-    comp_html = "".join(
-        f'<div style="display:flex;justify-content:space-between;font-size:11px;color:{CLR_MUTED};">'
-        f'<span>{k}</span><b style="color:{CLR_TEXT};">{v}</b></div>'
-        for k, v in comps.items()
-    )
-    st.markdown(f"""
-    <div style="background:{CLR_SURFACE};border:1px solid {CLR_BORDER};border-radius:8px;padding:16px 20px;">
-        <div style="font-size:11px;font-weight:600;color:{CLR_MUTED};text-transform:uppercase;
-                    letter-spacing:.08em;">{title} {conf_badge(conf)}</div>
-        <div style="display:flex;align-items:baseline;gap:12px;margin:6px 0;">
-            <span style="font-size:34px;font-weight:700;color:{color};">{score_disp}</span>
-            <span style="font-size:13px;font-weight:600;color:{color};">{label}</span>
-        </div>
-        {comp_html}
-    </div>
-    """, unsafe_allow_html=True)
-
 
 if st.button("← Home", key="back_home"):
     st.switch_page("app.py")
 
-page_header(
-    "Pricing Intelligence",
-    "Spread między rynkiem ofertowym a transakcyjnym · Negotiation Index · Liquidity",
-    color=CLR_GOLD,
-)
+page_header("Market Liquidity & Pricing",
+            "Płynność rynku, aktywność i estymacja cen transakcyjnych — z danych ofertowych",
+            color=CLR_GOLD)
 
-demo_banner("spread, Negotiation Index i Liquidity Score")
+st.caption("ℹ️ Ceny transakcyjne są **estymowane** z cen ofertowych (Asking × Discount Factor) — "
+           "platforma nie korzysta z płatnych/demonstracyjnych danych transakcyjnych. "
+           "Współczynnik kalibrowalny poniżej.")
 
-# ── Filtry ─────────────────────────────────────
-col_a, col_b, _sp = st.columns([1.5, 1.5, 4])
-with col_a:
-    win = st.selectbox("Okno transakcyjne", options=[30, 90, 180, 365], index=1,
-                       format_func=lambda d: f"{d} dni")
+# ── Sterowanie ─────────────────────────────────
+fc1, fc2, _sp = st.columns([1.4, 1.6, 4])
+with fc1:
+    seg_label = {"all": "Cały rynek", "residential": "Mieszkania", "office": "Biura",
+                 "retail": "Retail", "warehouse": "Magazyny"}
+    segment = st.selectbox("Segment", options=list(seg_label.keys()),
+                           index=1, format_func=lambda s: seg_label[s])
+with fc2:
+    discount = st.slider("Discount Factor (estymacja transakcyjnej)",
+                         min_value=0.80, max_value=1.00, value=DEFAULT_DISCOUNT_FACTOR,
+                         step=0.01, format="%.2f")
 
-@st.cache_data(ttl=120)
-def _load(win):
-    return (
-        get_pricing_kpis("residential", window_days=win),
-        get_spread_table("residential", win),
-        get_spread_history("residential", days=365),
-        compute_liquidity_score("residential"),
-        compute_pricing_pressure_score("residential"),
-    )
+kpis = get_market_kpis(segment, discount)
+ov = get_market_overview(segment)
 
-kpis, spread_tbl, history, liquidity, pressure = _load(win)
-
-# ── Data lag warning ──────────────────────────
-nbp = kpis.get("nbp_benchmark")
-st.markdown(f"""
-<div style="background:#1a1d26;border:1px solid {CLR_BORDER};border-radius:6px;
-            padding:8px 14px;margin-bottom:18px;font-size:12px;color:{CLR_MUTED};">
-⏱️ Dane transakcyjne mają naturalne opóźnienie 1–6 miesięcy względem ofertowych
-(rejestracja aktów + publikacja). Spread porównuje <b>dzisiejsze</b> ceny ofertowe
-z transakcjami z wybranego okna.
-</div>
-""", unsafe_allow_html=True)
-
-# ── KPI Row ────────────────────────────────────
-section_header("Kluczowe wskaźniki", f"residential · Mokotów · okno {win} dni")
-
-if kpis["median_asking"] is None and nbp is None:
-    st.info("Brak zmaterializowanych spreadów. Uruchom: "
-            "`python -c \"from analytics import materialize_pricing_spreads; materialize_pricing_spreads()\"`")
-else:
-    c1, c2, c3, c4 = st.columns(4, gap="small")
-    with c1:
-        kpi_card("Mediana asking", kpis["median_asking"], "PLN/m² (oferty)")
-    with c2:
-        kpi_card("Mediana transaction", kpis["median_transaction"], "PLN/m² (transakcje)")
-    with c3:
-        sp = kpis["spread_pct"]
-        kpi_card("Spread", sp, "% (tx − ask)/ask", delta=None)
-    with c4:
-        ni = kpis["negotiation_index"]
-        kpi_card("Negotiation Index", ni, "% pole negocjacji")
-    st.markdown(
-        f'<div style="text-align:right;margin-top:4px;">Ufność danych: {conf_badge(kpis["confidence"])} '
-        f'· {kpis["n_districts"]} dzielnic z danymi</div>',
-        unsafe_allow_html=True,
-    )
+# ── SEKCJA 8 — KPI TOP ─────────────────────────
+section_header("Kluczowe wskaźniki rynku")
+k = st.columns(7, gap="small")
+with k[0]: kpi_card("Active Listings", kpis["active"], "ofert")
+with k[1]: kpi_card("New 30D", kpis["new_30"], "ofert")
+with k[2]: kpi_card("Delisted 30D", kpis["delisted_30"], "ofert")
+with k[3]: kpi_card("Absorption", kpis["absorption_rate"], "%")
+with k[4]: kpi_card("Median /m²", kpis["median_price_m2"], "PLN")
+with k[5]: kpi_card("Est. Transaction /m²", kpis["est_transaction_m2"], "PLN")
+with k[6]: kpi_card("Median Age", kpis["median_listing_age"], "dni")
 
 divider()
 
-# ── Score widgets ──────────────────────────────
+# ── SEKCJA 1 — MARKET OVERVIEW ─────────────────
+section_header("Market Overview", f"segment: {seg_label[segment]}")
+o = st.columns(5, gap="small")
+with o[0]: kpi_card("Aktywne", ov["active"], "ofert")
+with o[1]: kpi_card("Nowe 7d", ov["new_7"], "ofert")
+with o[2]: kpi_card("Nowe 30d", ov["new_30"], "ofert")
+with o[3]: kpi_card("Usunięte 7d", ov["delisted_7"], "ofert")
+with o[4]: kpi_card("Usunięte 30d", ov["delisted_30"], "ofert")
+o2 = st.columns(4, gap="small")
+with o2[0]: kpi_card("Średnia cena", ov["avg_price"], "PLN")
+with o2[1]: kpi_card("Mediana ceny", ov["median_price"], "PLN")
+with o2[2]: kpi_card("Średnia /m²", ov["avg_price_m2"], "PLN/m²")
+with o2[3]: kpi_card("Mediana /m²", ov["median_price_m2"], "PLN/m²")
+if segment == "all":
+    st.caption("⚠️ Dla całego rynku ceny mieszają sprzedaż i najem (PLN/m² vs PLN/m²/mc) — "
+               "do analizy cen wybierz konkretny segment.")
+
+divider()
+
+# ── SEKCJA 2 + 4 — LIQUIDITY + ESTIMATED PRICE ─
+cL, cR = st.columns(2, gap="large")
+with cL:
+    section_header("Market Liquidity", "absorpcja i czas ekspozycji")
+    liq = get_market_liquidity(segment, 30)
+    lc = st.columns(2)
+    with lc[0]: kpi_card("Absorption Rate", liq["absorption_rate"], "% (del/new 30d)")
+    with lc[1]: kpi_card("Median ekspozycji", liq["median_exposure"], "dni")
+    lc2 = st.columns(2)
+    with lc2[0]: kpi_card("Śr. ekspozycja", liq["avg_exposure"], "dni")
+    with lc2[1]: kpi_card("Nowe / Usunięte", f"{liq['new_w']} / {liq['delisted_w']}", "30d")
+    older = liq["older_than"]
+    if older:
+        st.markdown(f'<div style="font-size:12px;color:{CLR_MUTED};margin-top:6px;">Oferty starsze niż:</div>',
+                    unsafe_allow_html=True)
+        ob = st.columns(4)
+        for i, t in enumerate(("30d", "60d", "90d", "180d")):
+            with ob[i]: kpi_card(f">{t}", older.get(t, 0), "ofert")
+
+with cR:
+    section_header("Estimated Transaction Price", f"Asking × {discount:.2f}")
+    est = estimate_transaction_price(segment, discount)
+    ec = st.columns(2)
+    with ec[0]: kpi_card("Median Asking /m²", est["median_asking_m2"], "PLN/m²")
+    with ec[1]: kpi_card("Est. Transaction /m²", est["est_transaction_m2"], "PLN/m²")
+    ec2 = st.columns(2)
+    with ec2[0]: kpi_card("Median Asking", est["median_asking"], "PLN")
+    with ec2[1]: kpi_card("Est. Transaction", est["est_transaction"], "PLN")
+    st.markdown(f"""
+    <div style="background:{CLR_SURFACE};border-left:3px solid {CLR_GOLD};border-radius:6px;
+                padding:12px 16px;margin-top:10px;font-size:12px;color:{CLR_TEXT};">
+        Implikowane pole negocjacji: <b>{est['implied_negotiation_pct']:.0f}%</b>.
+        Discount Factor parametryzowany — docelowo kalibrowany na realnych transakcjach
+        (gdy pojawi się dostęp do RCN bez kosztów).
+    </div>""", unsafe_allow_html=True)
+
+divider()
+
+# ── SEKCJA 3 — DELISTED PER DZIELNICA ──────────
+section_header("Delisted Listings per dzielnica", "oferty usunięte z rynku — sygnał absorpcji")
+deli = get_delisted_by_district(segment)
+if deli.empty:
+    st.caption("Brak danych delistingu w tym segmencie.")
+else:
+    d = deli.rename(columns={"district_label": "Dzielnica", "d7": "Delisted 7d",
+                             "d30": "Delisted 30d", "d90": "Delisted 90d", "active": "Aktywne"})
+    st.dataframe(d, use_container_width=True, hide_index=True)
+
+divider()
+
+# ── SEKCJA 5 — SEGMENTATION ────────────────────
+section_header("Segmentacja", "wg typu nieruchomości i przedziału metrażu")
+seg = get_segmentation(discount)
 sc1, sc2 = st.columns(2, gap="large")
 with sc1:
-    score_widget("Liquidity Score", liquidity)
+    st.markdown(f'<div style="font-size:13px;font-weight:600;color:{CLR_TEXT};margin-bottom:4px;">Wg typu</div>', unsafe_allow_html=True)
+    bt = seg["by_type"].copy()
+    bt["segment"] = bt["segment"].map(seg_label).fillna(bt["segment"])
+    bt = bt.rename(columns={"segment": "Segment", "active": "Aktywne",
+                            "median_m2": "Mediana /m²", "est_transaction_m2": "Est. tx /m²"})
+    st.dataframe(bt, use_container_width=True, hide_index=True)
 with sc2:
-    score_widget("Pricing Pressure Score", pressure)
+    st.markdown(f'<div style="font-size:13px;font-weight:600;color:{CLR_TEXT};margin-bottom:4px;">Wg metrażu (mieszkania)</div>', unsafe_allow_html=True)
+    ba = seg["by_area"].rename(columns={"bucket": "Metraż m²", "active": "Aktywne",
+                                        "median_m2": "Mediana /m²", "est_transaction_m2": "Est. tx /m²"})
+    st.dataframe(ba, use_container_width=True, hide_index=True)
 
 divider()
 
-# ── NBP city benchmark ────────────────────────
-if nbp:
-    section_header("Benchmark NBP (Warszawa, kwartalny)",
-                   "ceny transakcyjne BaRN — poziom miasta, rynek wtórny")
-    b1, b2, b3 = st.columns(3, gap="small")
-    with b1:
-        kpi_card("Asking Mokotów", nbp["asking"], "PLN/m² (nasze oferty)")
-    with b2:
-        kpi_card("Transaction Warszawa", nbp["transaction"], "PLN/m² (NBP)")
-    with b3:
-        kpi_card("Spread vs miasto", nbp["spread_pct"], "%")
-    st.caption("⚠️ Benchmark city-level: porównuje oferty z Mokotowa (dzielnica premium) "
-               "ze średnią transakcyjną CAŁEJ Warszawy — ujemny spread jest tu oczekiwany. "
-               "Służy do śledzenia TRENDU luki, nie wartości absolutnej.")
-
-divider()
-
-# ── Spread table ───────────────────────────────
-section_header("Spread per dzielnica", f"okno {win} dni · sortowane od największego spreadu")
-if spread_tbl.empty:
-    st.caption("Brak danych district-level w tym oknie (za mało transakcji — suppress).")
+# ── SEKCJA 6 — PRICE DYNAMICS ──────────────────
+section_header("Price Dynamics", "zmiana ceny /m² w czasie (z dziennych snapshotów)")
+dyn = get_price_dynamics(segment)
+has_dyn = any(v["median_chg"] is not None or v["avg_chg"] is not None for v in dyn.values())
+if not has_dyn:
+    st.caption("Dynamika cen buduje się z dziennych snapshotów — wartości pojawią się gdy "
+               "historia obejmie 7/30/90 dni (obecnie zbyt krótka).")
 else:
-    disp = spread_tbl.copy()
-    disp["Asking PLN/m²"] = disp["asking_price_per_m2"].round(0)
-    disp["Transaction PLN/m²"] = disp["transaction_price_per_m2"].round(0)
-    disp["Spread %"] = disp["spread_pct"].round(2)
-    disp["Negotiation Index %"] = disp["negotiation_index"].round(2)
-    disp = disp.rename(columns={
-        "display_name": "Dzielnica", "n_listings": "Oferty",
-        "n_transactions": "Transakcje", "confidence": "Ufność",
-    })[["Dzielnica", "Asking PLN/m²", "Transaction PLN/m²", "Spread %",
-        "Negotiation Index %", "Oferty", "Transakcje", "Ufność"]]
-    st.dataframe(disp, use_container_width=True, hide_index=True)
-
-divider()
-
-# ── Historical Spread Analysis ────────────────
-section_header("Historical Spread Analysis", "trend spreadu w czasie · per okno transakcyjne")
-if history.empty or history["snapshot_date"].nunique() < 2:
-    st.caption("Historia spreadu buduje się z codziennych materializacji — wykres pojawi się "
-               "po kilku dniach działania crona.")
-else:
-    fig = go.Figure()
-    colors = {30: CLR_ALERT, 90: CLR_GOLD, 180: CLR_OFFICE, 365: CLR_RESI}
-    for w in sorted(history["window_days"].unique()):
-        sub = history[history["window_days"] == w]
-        fig.add_trace(go.Scatter(
-            x=sub["snapshot_date"], y=sub["spread_pct"],
-            mode="lines+markers", name=f"{w}d",
-            line=dict(color=colors.get(w, CLR_MUTED), width=2),
-        ))
-    fig.add_hline(y=0, line_dash="dot", line_color=CLR_MUTED)
-    fig.update_layout(height=380, hovermode="x unified",
-                      yaxis_title="Spread % (tx − ask)/ask")
-    st.plotly_chart(apply_plot_theme(fig), use_container_width=True)
+    dc = st.columns(3)
+    for i, w in enumerate(("7d", "30d", "90d")):
+        with dc[i]:
+            mc = dyn[w]["median_chg"]
+            ac = dyn[w]["avg_chg"]
+            kpi_card(f"Median /m² Δ{w}", f"{mc:+.1f}" if mc is not None else None, "%")
+            st.caption(f"Średnia Δ{w}: {ac:+.1f}%" if ac is not None else f"Średnia Δ{w}: n/d")

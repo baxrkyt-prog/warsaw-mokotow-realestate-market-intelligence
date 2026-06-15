@@ -251,16 +251,15 @@ st.markdown(f'<div style="font-size:11px;color:{CLR_MUTED};text-transform:upperc
             f'letter-spacing:.08em;margin-bottom:10px;">Moduły analityczne</div>',
             unsafe_allow_html=True)
 
-nav_cols = st.columns(8, gap="small")
+nav_cols = st.columns(7, gap="small")
 NAV = [
     (nav_cols[0], "🏢 Office", "pages/office.py"),
     (nav_cols[1], "🏠 Residential", "pages/residential.py"),
-    (nav_cols[2], "💼 Transactions", "pages/transactions.py"),
-    (nav_cols[3], "📐 Pricing Intel", "pages/pricing_intelligence.py"),
-    (nav_cols[4], "🔄 Lifecycle", "pages/lifecycle.py"),
-    (nav_cols[5], "🗺️ Maps", "pages/maps.py"),
-    (nav_cols[6], f"🔔 Alerty{f' ({n_alerts})' if n_alerts else ''}", "pages/alerts.py"),
-    (nav_cols[7], "⭐ Watchlist", "pages/watchlist.py"),
+    (nav_cols[2], "📊 Liquidity & Pricing", "pages/pricing_intelligence.py"),
+    (nav_cols[3], "🔄 Lifecycle", "pages/lifecycle.py"),
+    (nav_cols[4], "🗺️ Maps", "pages/maps.py"),
+    (nav_cols[5], f"🔔 Alerty{f' ({n_alerts})' if n_alerts else ''}", "pages/alerts.py"),
+    (nav_cols[6], "⭐ Watchlist", "pages/watchlist.py"),
 ]
 for col, label, page in NAV:
     with col:

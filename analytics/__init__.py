@@ -107,6 +107,13 @@ from .lifecycle import (
     get_building_lifecycle, get_project_lifecycle, record_lifecycle_snapshot,
 )
 
+# Market Liquidity & Pricing (offer-based, zastępuje transaction demo)
+from .market_pricing import (
+    get_market_overview, get_market_liquidity, get_delisted_by_district,
+    estimate_transaction_price, get_segmentation, get_price_dynamics, get_market_kpis,
+    DEFAULT_DISCOUNT_FACTOR,
+)
+
 # Zone + Narrative (UX redesign)
 from .zone import get_zone_intelligence
 from .narrative import (
@@ -151,6 +158,10 @@ __all__ = [
     "get_dom_stats", "get_turnover_rate", "get_delisting_kpis", "get_delisting_trend",
     "get_listing_flow", "get_lifecycle_funnel", "get_stale_listings", "get_lifecycle_kpis",
     "get_building_lifecycle", "get_project_lifecycle", "record_lifecycle_snapshot",
+    # market liquidity & pricing (offer-based)
+    "get_market_overview", "get_market_liquidity", "get_delisted_by_district",
+    "estimate_transaction_price", "get_segmentation", "get_price_dynamics",
+    "get_market_kpis", "DEFAULT_DISCOUNT_FACTOR",
     # zone + narrative (UX)
     "get_zone_intelligence", "get_market_deltas", "get_what_changed",
     "generate_market_narrative", "generate_market_brief", "generate_market_brief_pdf",

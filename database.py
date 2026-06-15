@@ -614,35 +614,32 @@ def upsert_project_snapshot(conn, data: dict):
     """, data)
 
 
-def get_last_active_offer_ids(conn, asset_class: str, transaction_type: str = None) -> set:
+def get_last_active_offer_ids(conn, asset_class: str, transaction_type: str = None,
+                              source: str = None) -> set:
+    """Aktywne offer_id z ostatniego scrape. Opcjonalny filtr source —
+    KLUCZOWE dla multi-source: delisting Morizona nie może dotykać ofert Otodom."""
+    conds = ["l.asset_class = ?"]
+    params = [asset_class]
     if transaction_type:
-        row = conn.execute("""
-            SELECT MAX(s.scrape_date) as last_date
-            FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
-            WHERE l.asset_class = ? AND l.transaction_type = ?
-        """, (asset_class, transaction_type)).fetchone()
-    else:
-        row = conn.execute("""
-            SELECT MAX(s.scrape_date) as last_date
-            FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
-            WHERE l.asset_class = ?
-        """, (asset_class,)).fetchone()
+        conds.append("l.transaction_type = ?")
+        params.append(transaction_type)
+    if source:
+        conds.append("l.source = ?")
+        params.append(source)
+    where = " AND ".join(conds)
 
+    row = conn.execute(f"""
+        SELECT MAX(s.scrape_date) as last_date
+        FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
+        WHERE {where}
+    """, params).fetchone()
     if not row or not row["last_date"]:
         return set()
 
-    if transaction_type:
-        rows = conn.execute("""
-            SELECT s.offer_id FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
-            WHERE s.scrape_date = ? AND s.active_status = 1
-              AND l.asset_class = ? AND l.transaction_type = ?
-        """, (row["last_date"], asset_class, transaction_type)).fetchall()
-    else:
-        rows = conn.execute("""
-            SELECT s.offer_id FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
-            WHERE s.scrape_date = ? AND s.active_status = 1 AND l.asset_class = ?
-        """, (row["last_date"], asset_class)).fetchall()
-
+    rows = conn.execute(f"""
+        SELECT s.offer_id FROM snapshots s JOIN listings l ON l.offer_id = s.offer_id
+        WHERE s.scrape_date = ? AND s.active_status = 1 AND {where}
+    """, [row["last_date"]] + params).fetchall()
     return {r["offer_id"] for r in rows}
 
 

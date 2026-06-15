@@ -36,9 +36,16 @@ echo "[2/3] Gotowe."
 
 # 3. Deweloperzy
 echo ""
-echo "[3/6] Inwestycje deweloperskie (scraper_developer.py)..."
+echo "[3/7] Inwestycje deweloperskie (scraper_developer.py)..."
 "$VENV" "$DIR/scraper_developer.py" $SHOW_BROWSER 2>&1 | tee "$LOG_DIR/developer_$DATE.log"
-echo "[3/6] Gotowe."
+echo "[3/7] Gotowe."
+
+# 3b. Morizon — drugie źródło ofert mieszkaniowych
+echo ""
+echo "[3b/7] Morizon mieszkania (scraper_morizon.py)..."
+"$VENV" "$DIR/scraper_morizon.py" $SHOW_BROWSER 2>&1 | tee "$LOG_DIR/morizon_$DATE.log" || \
+    echo "[3b/7] WARN: Morizon nieudany — kontynuuję"
+echo "[3b/7] Gotowe."
 
 # 4. NBP BaRN — kwartalne ceny transakcyjne (darmowe; plik zmienia się raz na kwartał,
 #    ale pobranie jest tanie i idempotentne)

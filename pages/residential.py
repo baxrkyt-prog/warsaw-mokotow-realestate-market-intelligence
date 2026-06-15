@@ -328,41 +328,29 @@ with tabs[0]:
         else:
             st.info("Za mało danych trendowych.")
 
-        # ── Transaction Context (Phase 7) ──────────
+        # ── Pricing Context (estymacja z ofert — bez danych transakcyjnych) ─
         divider()
-        section_header("Kontekst transakcyjny",
-                       "Ceny ofertowe vs rzeczywiste transakcje — bez przechodzenia do innego modułu")
+        section_header("Kontekst cenowy",
+                       "Estymacja ceny transakcyjnej z ofertowej (Asking × Discount Factor)")
         try:
-            pk = get_pricing_kpis("residential", window_days=90)
-            tk = get_transaction_kpis("residential", window_days=90)
-            liq = compute_liquidity_score("residential")
+            from analytics import estimate_transaction_price, compute_liquidity_score as _liq
+            est = estimate_transaction_price("residential")
+            liq = _liq("residential")
         except Exception:
-            pk, tk, liq = {}, {}, {}
+            est, liq = {}, {}
 
-        tc = st.columns(5)
+        tc = st.columns(4)
         with tc[0]:
-            kpi_card("Median Asking", pk.get("median_asking"), unit="PLN/m² (oferty)")
+            kpi_card("Median Asking", est.get("median_asking_m2"), unit="PLN/m² (oferty)")
         with tc[1]:
-            kpi_card("Median Transaction", pk.get("median_transaction") or tk.get("median_price_per_m2"),
-                     unit="PLN/m² (transakcje)")
+            kpi_card("Est. Transaction", est.get("est_transaction_m2"), unit="PLN/m² (estym.)")
         with tc[2]:
-            sp = pk.get("spread_pct")
-            kpi_card("Spread", f"{sp:+.1f}" if sp is not None else None, unit="%")
+            kpi_card("Discount Factor", est.get("discount_factor"), unit="×")
         with tc[3]:
-            ni = pk.get("negotiation_index")
-            kpi_card("Negotiation Index", f"{ni:+.1f}" if ni is not None else None, unit="%")
-        with tc[4]:
             kpi_card("Liquidity Score", liq.get("score"),
                      unit=f"/100 {liq.get('label','')}" if liq.get("score") is not None else "n/d")
-
-        nbp = pk.get("nbp_benchmark") if pk else None
-        if (pk.get("spread_pct") is None) and nbp:
-            st.caption(f"⚠️ Brak wystarczających danych transakcyjnych na poziomie dzielnic — "
-                       f"benchmark NBP (Warszawa): transakcje {nbp['transaction']:.0f} vs asking "
-                       f"{nbp['asking']:.0f} PLN/m² ({nbp['spread_pct']:+.1f}%). "
-                       f"Pełna analiza w module Pricing Intelligence.")
-        else:
-            st.caption("Pełna analiza spreadu per dzielnica i historia w module Pricing Intelligence.")
+        st.caption("Pełna analiza płynności, absorpcji i segmentacji w module "
+                   "**Market Liquidity & Pricing**.")
 
 # ── TAB 1: LISTINGS ───────────────────────────
 with tabs[1]:
