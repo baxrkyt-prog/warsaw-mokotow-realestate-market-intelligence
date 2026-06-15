@@ -1,0 +1,24 @@
+{
+  "source": "fixture_sample_v1",
+  "property_type": "residential",
+  "market_type": "secondary",
+  "default_district": "Mokotów",
+  "default_district_norm": "mokotow",
+  "currency": "PLN",
+  "date_format": "%Y-%m-%d",
+  "skip_rows": 0,
+  "delimiter": ",",
+  "encoding": "utf-8",
+  "columns": {
+    "transaction_date":   "data_aktu",
+    "address":            "adres",
+    "subdistrict":        "dzielnica",
+    "area_m2":            "powierzchnia_m2",
+    "rooms":              "pokoje",
+    "floor":              "pietro",
+    "year_built":         "rok_budowy",
+    "transaction_price":  "cena_pln",
+    "source_record_id":   "id"
+  },
+  "id_strategy": "source_record_id"
+}

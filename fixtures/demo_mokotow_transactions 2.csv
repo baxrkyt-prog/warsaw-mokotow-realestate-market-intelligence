@@ -1,0 +1,229 @@
+id,data_transakcji,adres,dzielnica,powierzchnia_m2,pokoje,pietro,rok_budowy,rynek,cena_pln
+DM0001,2026-04-08,ul. Wołoska 57,Służewiec,53.1,2,3,2021,primary,1021000.0
+DM0002,2025-08-31,ul. Postępu 49,Służewiec,82.6,4,9,2024,secondary,1490000.0
+DM0003,2025-07-28,ul. Wołoska 29,Służewiec,40.6,2,0,2024,secondary,687000.0
+DM0004,2026-02-20,ul. Bokserska 52,Służewiec,56.5,3,6,1978,secondary,934000.0
+DM0005,2026-04-23,ul. Postępu 10,Służewiec,64.1,3,9,2012,secondary,1050000.0
+DM0006,2025-12-01,ul. Cybernetyki 58,Służewiec,55.0,3,9,2024,primary,920000.0
+DM0007,2025-11-02,ul. Rzymowskiego 57,Służewiec,61.5,3,7,2021,primary,1108000.0
+DM0008,2026-01-26,ul. Postępu 33,Służewiec,82.8,4,8,1965,secondary,1439000.0
+DM0009,2026-04-02,ul. Wynalazek 57,Służewiec,80.6,4,1,2021,secondary,1541000.0
+DM0010,2025-10-04,ul. Wołoska 41,Służewiec,86.5,4,7,2024,secondary,1590000.0
+DM0011,2025-09-01,ul. Obrzeżna 36,Służewiec,50.2,2,8,2024,primary,845000.0
+DM0012,2025-11-14,ul. Obrzeżna 1,Służewiec,58.1,3,0,1995,secondary,940000.0
+DM0013,2025-08-06,ul. Postępu 24,Służewiec,96.3,4,3,2012,secondary,1744000.0
+DM0014,2025-10-12,ul. Cybernetyki 36,Służewiec,61.8,3,0,2012,secondary,1131000.0
+DM0015,2026-04-18,ul. Wynalazek 17,Służewiec,58.3,3,7,1995,primary,1057000.0
+DM0016,2025-10-05,ul. Postępu 24,Służewiec,93.1,4,1,2004,secondary,1635000.0
+DM0017,2025-11-09,ul. Wołoska 1,Służewiec,45.0,2,7,1978,secondary,875000.0
+DM0018,2026-02-26,ul. Wynalazek 18,Służewiec,50.1,2,5,1995,secondary,902000.0
+DM0019,2025-07-02,ul. Postępu 45,Służewiec,65.5,3,2,2004,secondary,1174000.0
+DM0020,2026-04-01,ul. Wynalazek 19,Służewiec,95.9,4,1,2021,secondary,1799000.0
+DM0021,2026-03-30,ul. Obrzeżna 33,Służewiec,77.9,3,6,2021,primary,1473000.0
+DM0022,2025-09-14,ul. Wołoska 25,Służewiec,79.7,4,1,1965,primary,1309000.0
+DM0023,2025-07-12,ul. Domaniewska 2,Służewiec,54.5,2,8,2024,secondary,979000.0
+DM0024,2026-01-03,ul. Postępu 30,Służewiec,58.9,3,9,1995,secondary,1106000.0
+DM0025,2025-09-14,ul. Postępu 39,Służewiec,48.2,2,3,1978,secondary,863000.0
+DM0026,2026-05-21,ul. Domaniewska 42,Służewiec,47.6,2,8,1965,secondary,932000.0
+DM0027,2025-07-14,ul. Domaniewska 9,Służewiec,47.3,2,8,2004,primary,863000.0
+DM0028,2025-09-16,ul. Konstruktorska 25,Służewiec,87.6,4,4,2021,secondary,1354000.0
+DM0029,2026-04-28,ul. Konstruktorska 17,Służewiec,55.8,3,7,2024,primary,890000.0
+DM0030,2025-11-07,ul. Wynalazek 31,Służewiec,51.8,2,7,1978,secondary,823000.0
+DM0031,2025-09-12,ul. Marynarska 15,Służewiec,78.9,4,0,1978,primary,1437000.0
+DM0032,2025-07-12,ul. Konstruktorska 2,Służewiec,53.6,2,5,1995,secondary,918000.0
+DM0033,2025-06-21,ul. Wołoska 40,Służewiec,64.9,3,4,2004,secondary,1101000.0
+DM0034,2025-08-23,ul. Wołoska 51,Służewiec,51.0,2,4,1978,primary,887000.0
+DM0035,2026-03-12,ul. Bokserska 47,Służewiec,42.4,2,2,1978,secondary,684000.0
+DM0036,2026-01-17,ul. Bokserska 11,Służewiec,65.7,3,4,2012,secondary,1006000.0
+DM0037,2025-11-09,ul. Obrzeżna 27,Służewiec,84.8,4,0,1965,secondary,1582000.0
+DM0038,2026-05-27,ul. Wynalazek 37,Służewiec,52.7,2,5,2018,secondary,830000.0
+DM0039,2025-08-01,ul. Domaniewska 60,Służewiec,67.8,3,6,2018,secondary,1203000.0
+DM0040,2025-08-07,ul. Wołoska 44,Służewiec,59.4,3,5,2012,secondary,1118000.0
+DM0041,2025-12-07,ul. Domaniewska 19,Służewiec,38.6,2,5,2012,secondary,737000.0
+DM0042,2026-04-06,ul. Rzymowskiego 58,Służewiec,52.2,2,0,2018,secondary,890000.0
+DM0043,2026-05-10,ul. Rzymowskiego 8,Służewiec,73.6,3,1,1965,secondary,1152000.0
+DM0044,2025-12-08,ul. Obrzeżna 2,Służewiec,66.2,3,6,1995,secondary,1257000.0
+DM0045,2025-11-23,ul. Marynarska 50,Służewiec,55.6,3,2,1995,secondary,1010000.0
+DM0046,2025-07-04,ul. Wynalazek 26,Służewiec,73.3,3,4,1995,secondary,1246000.0
+DM0047,2026-05-30,ul. Obrzeżna 21,Służewiec,51.3,2,2,1978,primary,895000.0
+DM0048,2025-08-28,ul. Wynalazek 53,Służewiec,36.6,2,4,2018,secondary,723000.0
+DM0049,2025-12-27,ul. Marynarska 31,Służewiec,38.5,2,0,2004,secondary,758000.0
+DM0050,2026-03-22,ul. Cybernetyki 46,Służewiec,91.4,4,5,2004,secondary,1724000.0
+DM0051,2026-01-17,ul. Bokserska 30,Służewiec,54.1,2,7,2024,primary,862000.0
+DM0052,2025-06-28,ul. Cybernetyki 10,Służewiec,65.3,3,7,1965,primary,1016000.0
+DM0053,2025-09-13,ul. Konstruktorska 6,Służewiec,72.4,3,4,2018,secondary,1312000.0
+DM0054,2026-01-23,ul. Domaniewska 35,Służewiec,44.5,2,3,2012,secondary,839000.0
+DM0055,2025-11-18,ul. Wynalazek 52,Służewiec,55.7,3,2,1978,secondary,1053000.0
+DM0056,2025-11-20,ul. Domaniewska 48,Służewiec,53.7,2,9,2004,secondary,866000.0
+DM0057,2026-01-09,ul. Bukowińska 25,Ksawerów,52.1,2,3,1965,primary,926000.0
+DM0058,2025-07-11,ul. Janka Bytnara 11,Ksawerów,60.3,3,8,1965,secondary,1080000.0
+DM0059,2025-09-04,ul. Niedźwiedzia 33,Ksawerów,44.9,2,0,2018,secondary,759000.0
+DM0060,2026-01-04,ul. Janka Bytnara 16,Ksawerów,48.6,2,2,1978,primary,846000.0
+DM0061,2025-10-02,ul. Niedźwiedzia 25,Ksawerów,42.5,2,4,2012,secondary,886000.0
+DM0062,2025-12-11,ul. Janka Bytnara 34,Ksawerów,60.0,3,3,2018,secondary,1108000.0
+DM0063,2025-10-17,ul. Niedźwiedzia 50,Ksawerów,90.2,4,1,2024,secondary,1597000.0
+DM0064,2026-01-23,ul. Domaniewska 28,Ksawerów,75.7,3,8,2018,secondary,1311000.0
+DM0065,2025-07-06,ul. Bukowińska 13,Ksawerów,83.9,4,7,2004,primary,1494000.0
+DM0066,2025-12-11,ul. Janka Bytnara 25,Ksawerów,76.1,3,3,1995,secondary,1355000.0
+DM0067,2025-08-21,ul. Domaniewska 22,Ksawerów,69.6,3,1,2018,secondary,1160000.0
+DM0068,2025-10-23,ul. Domaniewska 15,Ksawerów,50.8,2,5,1995,secondary,961000.0
+DM0069,2026-04-05,ul. Aleja Wilanowska 26,Ksawerów,51.0,2,0,2018,secondary,983000.0
+DM0070,2025-12-17,ul. Aleja Wilanowska 59,Ksawerów,41.7,2,8,2004,secondary,864000.0
+DM0071,2025-07-11,ul. Bukowińska 1,Ksawerów,53.6,2,4,2012,secondary,1083000.0
+DM0072,2025-08-15,ul. Aleja Wilanowska 55,Ksawerów,68.9,3,7,2018,secondary,1235000.0
+DM0073,2026-02-15,ul. Domaniewska 21,Ksawerów,68.4,3,0,2004,primary,1319000.0
+DM0074,2025-09-17,ul. Niedźwiedzia 36,Ksawerów,51.3,2,3,1965,primary,985000.0
+DM0075,2026-03-20,ul. Aleja Wilanowska 14,Ksawerów,53.6,2,9,1995,secondary,936000.0
+DM0076,2026-04-25,ul. Janka Bytnara 36,Ksawerów,64.7,3,2,1978,secondary,1270000.0
+DM0077,2025-11-05,ul. Janka Bytnara 15,Ksawerów,37.4,2,7,2018,secondary,746000.0
+DM0078,2025-12-27,ul. Domaniewska 54,Ksawerów,66.7,3,4,1965,secondary,1161000.0
+DM0079,2026-03-31,ul. Domaniewska 54,Ksawerów,34.5,1,7,2004,secondary,747000.0
+DM0080,2025-09-18,ul. Bukowińska 38,Ksawerów,82.6,4,0,2021,primary,1479000.0
+DM0081,2025-07-12,ul. Domaniewska 31,Ksawerów,69.9,3,9,1978,primary,1331000.0
+DM0082,2025-09-13,ul. Domaniewska 24,Ksawerów,66.2,3,2,1978,primary,1211000.0
+DM0083,2026-03-10,ul. Janka Bytnara 34,Ksawerów,76.2,3,6,1978,primary,1576000.0
+DM0084,2026-02-18,ul. Aleja Wilanowska 33,Ksawerów,35.5,2,8,1995,secondary,667000.0
+DM0085,2026-01-20,ul. Bukowińska 36,Ksawerów,77.3,3,5,2018,primary,1507000.0
+DM0086,2025-11-19,ul. Bukowińska 10,Ksawerów,62.9,3,9,1995,secondary,1223000.0
+DM0087,2026-04-01,ul. Wielicka 4,Wierzbno,79.0,4,0,2012,primary,1630000.0
+DM0088,2026-03-08,ul. Puławska 9,Wierzbno,44.6,2,7,1995,secondary,992000.0
+DM0089,2026-05-11,ul. Modzelewskiego 42,Wierzbno,75.6,3,9,2024,primary,1523000.0
+DM0090,2026-05-24,ul. Wielicka 6,Wierzbno,52.3,2,7,2021,secondary,1026000.0
+DM0091,2025-12-23,ul. Modzelewskiego 1,Wierzbno,44.9,2,0,1978,secondary,894000.0
+DM0092,2025-06-12,ul. Puławska 49,Wierzbno,72.1,3,0,1995,secondary,1459000.0
+DM0093,2026-04-22,ul. Krasickiego 16,Wierzbno,57.6,3,3,2024,secondary,1093000.0
+DM0094,2026-03-18,ul. Modzelewskiego 30,Wierzbno,63.0,3,5,2004,primary,1319000.0
+DM0095,2025-07-20,ul. Wielicka 39,Wierzbno,74.7,3,7,1978,primary,1556000.0
+DM0096,2026-02-19,ul. Woronicza 23,Wierzbno,74.8,3,9,1995,secondary,1303000.0
+DM0097,2026-02-23,ul. Modzelewskiego 2,Wierzbno,68.7,3,8,1995,secondary,1220000.0
+DM0098,2025-07-18,ul. Puławska 26,Wierzbno,78.4,4,0,2024,secondary,1403000.0
+DM0099,2026-01-19,ul. Krasickiego 7,Wierzbno,82.5,4,2,2004,primary,1575000.0
+DM0100,2025-10-17,ul. Woronicza 60,Wierzbno,55.6,3,8,2018,secondary,1090000.0
+DM0101,2025-06-23,ul. Wielicka 53,Wierzbno,40.5,2,8,1978,primary,800000.0
+DM0102,2026-01-07,ul. Woronicza 34,Wierzbno,36.6,2,7,1978,secondary,768000.0
+DM0103,2025-07-12,ul. Wielicka 31,Wierzbno,79.2,4,8,1965,secondary,1657000.0
+DM0104,2025-12-26,ul. Woronicza 11,Wierzbno,44.3,2,8,2012,secondary,799000.0
+DM0105,2026-05-15,ul. Wielicka 34,Wierzbno,75.4,3,1,2018,secondary,1307000.0
+DM0106,2026-01-01,ul. Modzelewskiego 45,Wierzbno,95.9,4,3,2021,secondary,1720000.0
+DM0107,2025-12-29,ul. Wielicka 12,Wierzbno,57.4,3,7,2004,secondary,1094000.0
+DM0108,2025-08-10,ul. Wielicka 2,Wierzbno,60.1,3,7,2004,secondary,1103000.0
+DM0109,2026-05-21,ul. Puławska 16,Wierzbno,62.7,3,8,2018,secondary,1295000.0
+DM0110,2025-10-29,ul. Puławska 39,Wierzbno,84.5,4,8,1995,primary,1638000.0
+DM0111,2026-04-06,ul. Wielicka 5,Wierzbno,64.4,3,8,1995,secondary,1331000.0
+DM0112,2026-04-12,ul. Modzelewskiego 26,Wierzbno,79.3,4,0,2004,secondary,1640000.0
+DM0113,2026-01-24,ul. Madalińskiego 59,Stary Mokotów,75.6,3,5,1978,secondary,1524000.0
+DM0114,2026-05-20,ul. Asfaltowa 36,Stary Mokotów,48.7,2,1,2024,secondary,1194000.0
+DM0115,2026-05-20,ul. Asfaltowa 30,Stary Mokotów,54.6,2,8,1965,primary,1320000.0
+DM0116,2026-03-02,ul. Rakowiecka 19,Stary Mokotów,69.2,3,1,1995,secondary,1692000.0
+DM0117,2026-01-16,ul. Asfaltowa 3,Stary Mokotów,48.1,2,7,2012,secondary,1026000.0
+DM0118,2025-06-14,ul. Asfaltowa 34,Stary Mokotów,74.0,3,9,2004,secondary,1464000.0
+DM0119,2026-05-11,ul. Kazimierzowska 30,Stary Mokotów,63.3,3,1,2004,secondary,1307000.0
+DM0120,2025-11-08,ul. Asfaltowa 40,Stary Mokotów,56.0,3,2,1995,secondary,1099000.0
+DM0121,2025-08-25,ul. Kazimierzowska 18,Stary Mokotów,47.8,2,2,2024,secondary,1129000.0
+DM0122,2025-12-13,ul. Różana 56,Stary Mokotów,40.1,2,8,2004,primary,984000.0
+DM0123,2025-10-08,ul. Madalińskiego 12,Stary Mokotów,85.2,4,7,1978,secondary,1694000.0
+DM0124,2025-11-25,ul. Asfaltowa 27,Stary Mokotów,41.3,2,9,2018,secondary,994000.0
+DM0125,2025-12-07,ul. Rakowiecka 42,Stary Mokotów,40.8,2,4,2004,secondary,982000.0
+DM0126,2026-02-02,ul. Różana 44,Stary Mokotów,93.6,4,9,1995,secondary,2098000.0
+DM0127,2025-09-08,ul. Asfaltowa 12,Stary Mokotów,32.5,1,7,1978,secondary,680000.0
+DM0128,2025-10-09,ul. Różana 60,Stary Mokotów,75.6,3,7,1978,secondary,1507000.0
+DM0129,2026-06-05,ul. Kazimierzowska 17,Stary Mokotów,67.1,3,0,2024,secondary,1418000.0
+DM0130,2026-03-22,ul. Kazimierzowska 38,Stary Mokotów,55.7,3,1,1978,secondary,1262000.0
+DM0131,2025-12-23,ul. Kazimierzowska 18,Stary Mokotów,58.6,3,7,2024,secondary,1147000.0
+DM0132,2026-01-06,ul. Kazimierzowska 31,Stary Mokotów,50.2,2,4,2018,primary,1183000.0
+DM0133,2026-04-16,ul. Narbutta 45,Stary Mokotów,67.1,3,4,2021,secondary,1313000.0
+DM0134,2025-06-18,ul. Rakowiecka 15,Stary Mokotów,70.1,3,6,1995,secondary,1387000.0
+DM0135,2025-07-12,ul. Różana 20,Stary Mokotów,63.0,3,8,2021,secondary,1263000.0
+DM0136,2025-12-12,ul. Narbutta 33,Stary Mokotów,84.7,4,4,1965,secondary,1827000.0
+DM0137,2026-02-27,ul. Asfaltowa 38,Stary Mokotów,52.3,2,2,2024,primary,1258000.0
+DM0138,2025-07-17,ul. Madalińskiego 48,Stary Mokotów,61.1,3,0,2018,secondary,1178000.0
+DM0139,2025-11-08,ul. Różana 57,Stary Mokotów,49.1,2,8,2012,primary,1144000.0
+DM0140,2025-07-28,ul. Madalińskiego 49,Stary Mokotów,61.5,3,6,2004,secondary,1433000.0
+DM0141,2025-09-11,ul. Olesińska 55,Górny Mokotów,57.9,3,3,2021,secondary,1189000.0
+DM0142,2026-05-24,ul. Wiktorska 40,Górny Mokotów,42.5,2,6,2024,primary,847000.0
+DM0143,2026-03-19,ul. Puławska 35,Górny Mokotów,58.2,3,1,1978,secondary,1091000.0
+DM0144,2025-11-16,ul. Puławska 27,Górny Mokotów,43.6,2,3,2018,secondary,937000.0
+DM0145,2026-06-06,ul. Olesińska 43,Górny Mokotów,41.8,2,2,2024,secondary,804000.0
+DM0146,2026-04-18,ul. Dąbrowskiego 56,Górny Mokotów,68.8,3,8,2024,secondary,1506000.0
+DM0147,2026-03-07,ul. Dąbrowskiego 29,Górny Mokotów,43.7,2,7,1978,primary,890000.0
+DM0148,2025-08-30,ul. Dąbrowskiego 6,Górny Mokotów,78.8,4,0,2024,secondary,1542000.0
+DM0149,2026-05-06,ul. Wiktorska 23,Górny Mokotów,58.5,3,1,1965,secondary,1064000.0
+DM0150,2025-10-31,ul. Dąbrowskiego 28,Górny Mokotów,68.6,3,1,2018,primary,1293000.0
+DM0151,2026-06-02,ul. Olesińska 17,Górny Mokotów,83.9,4,6,1978,secondary,1752000.0
+DM0152,2025-12-03,ul. Puławska 37,Górny Mokotów,92.1,4,9,2012,secondary,1661000.0
+DM0153,2025-07-28,ul. Dąbrowskiego 34,Górny Mokotów,84.8,4,6,2012,secondary,1609000.0
+DM0154,2025-07-30,ul. Wiktorska 48,Górny Mokotów,50.3,2,4,2004,secondary,1009000.0
+DM0155,2025-08-09,ul. Olesińska 17,Górny Mokotów,58.5,3,4,1978,primary,1124000.0
+DM0156,2026-02-01,ul. Olesińska 45,Górny Mokotów,30.0,1,5,1978,secondary,618000.0
+DM0157,2025-11-12,ul. Wiktorska 44,Górny Mokotów,69.0,3,1,2018,primary,1421000.0
+DM0158,2025-10-30,ul. Olesińska 37,Górny Mokotów,75.9,3,6,2018,secondary,1503000.0
+DM0159,2025-12-07,ul. Pasterska 51,Stegny,56.0,3,7,1965,secondary,871000.0
+DM0160,2025-10-12,ul. Pasterska 35,Stegny,37.3,2,8,1965,secondary,568000.0
+DM0161,2025-12-20,ul. Pasterska 1,Stegny,58.0,3,3,2004,secondary,911000.0
+DM0162,2026-02-10,ul. Bonifacego 7,Stegny,46.6,2,9,1965,secondary,820000.0
+DM0163,2026-04-13,ul. Sobieskiego 59,Stegny,85.5,4,1,1978,primary,1303000.0
+DM0164,2025-11-21,ul. Sobieskiego 49,Stegny,36.5,2,4,2021,primary,623000.0
+DM0165,2025-08-26,ul. Czarnomorska 60,Stegny,70.8,3,0,2021,secondary,1213000.0
+DM0166,2026-01-22,ul. Czarnomorska 39,Stegny,68.6,3,6,1965,secondary,1240000.0
+DM0167,2025-08-18,ul. Czarnomorska 51,Stegny,57.1,3,0,2012,secondary,908000.0
+DM0168,2026-04-20,ul. Pasterska 48,Stegny,78.9,4,7,1995,secondary,1265000.0
+DM0169,2026-03-18,ul. Sobieskiego 57,Stegny,76.4,3,1,2004,secondary,1299000.0
+DM0170,2026-04-29,ul. Sobieskiego 24,Stegny,54.8,2,9,1978,secondary,995000.0
+DM0171,2026-02-15,ul. Pasterska 35,Stegny,47.6,2,8,1978,primary,749000.0
+DM0172,2026-05-01,ul. Pasterska 51,Stegny,71.6,3,2,1995,secondary,1159000.0
+DM0173,2025-08-29,ul. Pasterska 38,Stegny,50.3,2,7,2018,secondary,745000.0
+DM0174,2026-03-08,ul. Czarnomorska 40,Stegny,92.8,4,4,1965,primary,1499000.0
+DM0175,2025-12-13,ul. Pasterska 31,Stegny,83.1,4,0,2012,secondary,1253000.0
+DM0176,2025-10-18,ul. Sobieskiego 14,Stegny,56.3,3,4,1978,secondary,968000.0
+DM0177,2025-06-25,ul. Pasterska 19,Stegny,80.9,4,4,1995,primary,1155000.0
+DM0178,2025-06-13,ul. Sobieskiego 19,Stegny,89.4,4,6,1978,primary,1267000.0
+DM0179,2025-07-08,ul. Sobieskiego 21,Stegny,48.0,2,3,1965,secondary,794000.0
+DM0180,2025-12-26,ul. Bonifacego 44,Stegny,41.6,2,5,2004,secondary,708000.0
+DM0181,2025-06-26,ul. Truskawiecka 45,Sadyba,65.1,3,6,1965,secondary,1197000.0
+DM0182,2025-12-14,ul. Jodłowa 36,Sadyba,85.5,4,8,2018,primary,1483000.0
+DM0183,2025-09-05,ul. Powsińska 28,Sadyba,84.2,4,7,1965,secondary,1403000.0
+DM0184,2026-05-18,ul. Truskawiecka 26,Sadyba,59.9,3,1,2018,primary,1233000.0
+DM0185,2026-01-23,ul. Goraszewska 18,Sadyba,43.2,2,3,2024,primary,832000.0
+DM0186,2026-06-03,ul. Truskawiecka 23,Sadyba,43.4,2,2,2021,primary,910000.0
+DM0187,2025-07-13,ul. Jodłowa 12,Sadyba,44.1,2,4,2021,secondary,788000.0
+DM0188,2025-10-27,ul. Truskawiecka 25,Sadyba,64.1,3,5,2004,secondary,1107000.0
+DM0189,2025-08-06,ul. Truskawiecka 17,Sadyba,64.9,3,5,2004,secondary,1259000.0
+DM0190,2025-12-20,ul. Jodłowa 12,Sadyba,63.7,3,1,2024,secondary,1292000.0
+DM0191,2026-02-12,ul. Truskawiecka 54,Sadyba,91.8,4,7,1965,primary,1774000.0
+DM0192,2026-01-10,ul. Jodłowa 54,Sadyba,71.9,3,7,2018,secondary,1388000.0
+DM0193,2026-05-04,ul. Truskawiecka 48,Sadyba,76.3,3,5,2021,secondary,1576000.0
+DM0194,2025-06-15,ul. Powsińska 34,Sadyba,71.3,3,2,2004,primary,1192000.0
+DM0195,2025-08-16,ul. Jodłowa 40,Sadyba,89.8,4,4,1965,secondary,1840000.0
+DM0196,2026-03-12,ul. Truskawiecka 18,Sadyba,64.6,3,7,1978,secondary,1149000.0
+DM0197,2026-04-03,ul. Powsińska 12,Sadyba,50.9,2,6,1978,secondary,920000.0
+DM0198,2025-11-13,ul. Powsińska 5,Sadyba,75.9,3,0,1965,primary,1479000.0
+DM0199,2026-05-17,ul. Powsińska 2,Sadyba,67.8,3,7,1965,secondary,1324000.0
+DM0200,2025-08-08,ul. Powsińska 13,Sadyba,93.7,4,9,1995,secondary,1709000.0
+DM0201,2026-02-15,ul. Bartycka 3,Siekierki,36.7,2,4,2024,secondary,588000.0
+DM0202,2025-09-10,ul. Gościniec 46,Siekierki,71.9,3,6,1978,primary,968000.0
+DM0203,2026-01-02,ul. Bartycka 1,Siekierki,56.6,3,2,1965,secondary,822000.0
+DM0204,2026-02-04,ul. Gościniec 1,Siekierki,94.2,4,3,1965,primary,1268000.0
+DM0205,2025-12-31,ul. Gościniec 6,Siekierki,46.1,2,6,2024,secondary,666000.0
+DM0206,2025-12-10,ul. Bartycka 6,Siekierki,46.7,2,2,2021,secondary,741000.0
+DM0207,2025-09-19,ul. Antoniewska 56,Siekierki,72.5,3,7,2024,secondary,1155000.0
+DM0208,2025-12-16,ul. Bartycka 38,Siekierki,78.2,4,9,1995,secondary,1204000.0
+DM0209,2025-09-20,ul. Bartycka 13,Siekierki,39.5,2,7,1965,primary,683000.0
+DM0210,2025-10-01,ul. Gościniec 8,Siekierki,71.2,3,5,1978,secondary,961000.0
+DM0211,2025-08-13,ul. Bartycka 59,Siekierki,84.2,4,4,2024,primary,1281000.0
+DM0212,2025-07-02,ul. Gościniec 17,Siekierki,56.7,3,8,2018,secondary,906000.0
+DM0213,2025-11-17,ul. Noskowskiego 7,Służew,97.7,4,6,2024,secondary,1592000.0
+DM0214,2025-09-15,ul. Noskowskiego 38,Służew,45.0,2,7,2004,secondary,890000.0
+DM0215,2026-04-22,ul. Batuty 44,Służew,44.5,2,2,2021,secondary,743000.0
+DM0216,2025-11-11,ul. Wałbrzyska 37,Służew,56.4,3,0,1995,secondary,900000.0
+DM0217,2026-03-31,ul. Batuty 10,Służew,72.5,3,0,2012,secondary,1219000.0
+DM0218,2026-03-16,ul. Batuty 2,Służew,62.3,3,9,2018,secondary,1213000.0
+DM0219,2026-05-08,ul. Batuty 34,Służew,85.8,4,9,2024,secondary,1569000.0
+DM0220,2026-04-06,ul. Batuty 4,Służew,52.8,2,1,2004,secondary,930000.0
+DM0221,2025-07-22,ul. Noskowskiego 38,Służew,44.8,2,5,2021,secondary,875000.0
+DM0222,2026-02-28,ul. Wałbrzyska 59,Służew,102.2,4,7,2021,secondary,1783000.0
+DM0223,2025-07-13,ul. Batuty 26,Służew,61.8,3,1,1995,secondary,962000.0
+DM0224,2025-09-10,ul. Noskowskiego 3,Służew,96.4,4,0,1995,secondary,1631000.0
+DM0225,2025-09-02,ul. Batuty 26,Służew,56.8,3,9,2018,secondary,1045000.0
+DM0226,2026-02-14,ul. Noskowskiego 56,Służew,43.8,2,5,2018,secondary,764000.0
+DM0227,2026-02-24,ul. Wałbrzyska 4,Służew,85.0,4,0,2021,secondary,1581000.0
+DM0228,2025-10-02,ul. Noskowskiego 5,Służew,97.3,4,1,1995,secondary,1780000.0

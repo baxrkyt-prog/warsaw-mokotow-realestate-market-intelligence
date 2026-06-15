@@ -20,10 +20,6 @@ def get_scrape_log(limit: int = 50) -> pd.DataFrame:
 
 
 def get_last_scrape_ts() -> str:
-    """Czas ostatniego UDANEGO runu (ok/partial) — nie pokazuje błędnych,
-    żeby dashboard nie twierdził 'zaktualizowano' gdy scrape padł."""
     with get_conn() as conn:
-        r = conn.execute(
-            "SELECT MAX(run_ts) as ts FROM scrape_runs WHERE status IN ('ok','partial')"
-        ).fetchone()
+        r = conn.execute("SELECT MAX(run_ts) as ts FROM scrape_runs").fetchone()
     return r["ts"][:16].replace("T", " ") + " UTC" if r and r["ts"] else "—"

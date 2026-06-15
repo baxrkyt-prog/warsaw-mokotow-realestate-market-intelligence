@@ -212,8 +212,10 @@ def parse_listing(article):
         return None
 
 
-def scrape(url: str, headless: bool = True) -> list:
+def scrape(url: str, headless: bool = True) -> tuple:
+    """Zwraca (offers, nav_error) — nav_error=True gdy nawigacja padła."""
     all_offers = []
+    nav_error = False
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
@@ -243,9 +245,11 @@ def scrape(url: str, headless: bool = True) -> list:
                 page.wait_for_timeout(4000)
             except PWTimeout:
                 log.warning(f"[TIMEOUT] Strona {page_num}")
+                nav_error = True
                 break
             except Exception as e:
                 log.error(f"[NAV ERROR] {e}")
+                nav_error = True
                 break
 
             time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
@@ -272,13 +276,20 @@ def scrape(url: str, headless: bool = True) -> list:
         browser.close()
 
     log.info(f"[SCRAPE] Łącznie: {len(all_offers)} ofert biurowych")
-    return all_offers
+    return all_offers, nav_error
 
 
-def save_to_db(offers: list, source_url: str) -> dict:
+def save_to_db(offers: list, source_url: str, nav_error: bool = False) -> dict:
     now = datetime.now(timezone.utc)
     scrape_ts = now.isoformat()
     scrape_date = now.date().isoformat()
+
+    if not offers:
+        run_status = "error"
+    elif nav_error:
+        run_status = "partial"
+    else:
+        run_status = "ok"
 
     stats = {
         "run_ts": scrape_ts,
@@ -289,8 +300,8 @@ def save_to_db(offers: list, source_url: str) -> dict:
         "new_listings": 0,
         "delisted": 0,
         "price_changes": 0,
-        "status": "ok",
-        "error_msg": None,
+        "status": run_status,
+        "error_msg": "navigation interrupted" if nav_error else None,
     }
 
     with get_conn() as conn:
@@ -323,7 +334,7 @@ def save_to_db(offers: list, source_url: str) -> dict:
 
         disappeared = prev_active - current_ids
         coverage = len(current_ids) / max(len(prev_active), 1)
-        if disappeared and coverage >= 0.85:
+        if disappeared and run_status == "ok" and coverage >= 0.85:
             mark_delisted(conn, list(disappeared), scrape_date, scrape_ts)
             stats["delisted"] = len(disappeared)
         elif disappeared:
@@ -356,10 +367,12 @@ def main():
 
     all_offers = []
     seen = set()
+    any_nav_error = False
     for u in urls_to_scrape:
         log.info(f"[START] Scrapowanie: {u[:80]}...")
         try:
-            batch = scrape(u, headless=not args.show_browser)
+            batch, nav_error = scrape(u, headless=not args.show_browser)
+            any_nav_error = any_nav_error or nav_error
             for o in batch:
                 if o["offer_id"] not in seen:
                     seen.add(o["offer_id"])
@@ -367,12 +380,12 @@ def main():
             log.info(f"  → {len(batch)} ofert z tego URL-a")
         except Exception as e:
             log.error(f"[ERROR] {u}: {e}")
+            any_nav_error = True
 
     offers = all_offers
-    if offers:
-        save_to_db(offers, args.url)
-    else:
-        log.warning("[WARN] Brak ofert — sprawdź selektor lub połączenie")
+    save_to_db(offers, args.url, nav_error=any_nav_error)
+    if not offers:
+        log.warning("[WARN] Brak ofert — run zapisany jako status=error")
 
 
 if __name__ == "__main__":

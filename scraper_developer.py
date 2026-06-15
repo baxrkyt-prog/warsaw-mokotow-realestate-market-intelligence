@@ -466,6 +466,9 @@ def main():
         f"jednostki: {total_units}, nowe: {total_new}"
     )
 
+    # Status szczery: brak projektów/jednostek = nieudany scrape (awaria sieci/blokada)
+    run_status = "ok" if total_projects > 0 else "error"
+
     with get_conn() as conn:
         log_run(conn, {
             "run_ts":        scrape_ts,
@@ -476,8 +479,8 @@ def main():
             "new_listings":  total_new,
             "delisted":      0,
             "price_changes": 0,
-            "status":        "ok",
-            "error_msg":     None,
+            "status":        run_status,
+            "error_msg":     None if run_status == "ok" else "no projects scraped",
         })
 
 

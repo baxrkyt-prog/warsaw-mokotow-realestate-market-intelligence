@@ -154,8 +154,11 @@ def parse_listing(article) -> Optional[dict]:
         return None
 
 
-def scrape(url: str, headless: bool = True) -> list:
+def scrape(url: str, headless: bool = True) -> tuple:
+    """Zwraca (offers, nav_error) — nav_error=True gdy nawigacja padła
+    (timeout/błąd sieci) i scrape jest niekompletny."""
     all_offers = []
+    nav_error = False
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless)
@@ -185,9 +188,11 @@ def scrape(url: str, headless: bool = True) -> list:
                 page.wait_for_timeout(4000)
             except PWTimeout:
                 log.warning(f"[TIMEOUT] Strona {page_num}")
+                nav_error = True
                 break
             except Exception as e:
                 log.error(f"[NAV ERROR] {e}")
+                nav_error = True
                 break
 
             time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
@@ -212,13 +217,24 @@ def scrape(url: str, headless: bool = True) -> list:
         browser.close()
 
     log.info(f"[SCRAPE] Łącznie: {len(all_offers)} ofert sprzedaży")
-    return all_offers
+    return all_offers, nav_error
 
 
-def save_to_db(offers: list, source_url: str) -> dict:
+def save_to_db(offers: list, source_url: str, nav_error: bool = False) -> dict:
     now = datetime.now(timezone.utc)
     scrape_ts = now.isoformat()
     scrape_date = now.date().isoformat()
+
+    # Status odzwierciedla rzeczywistość — nie zapisujemy fałszywego "ok":
+    #   error   = nic nie pobrano (awaria sieci/blokada)
+    #   partial = pobrano część, ale nawigacja padła (niekompletne dane)
+    #   ok      = pełny, czysty scrape
+    if not offers:
+        run_status = "error"
+    elif nav_error:
+        run_status = "partial"
+    else:
+        run_status = "ok"
 
     stats = {
         "run_ts": scrape_ts,
@@ -229,8 +245,8 @@ def save_to_db(offers: list, source_url: str) -> dict:
         "new_listings": 0,
         "delisted": 0,
         "price_changes": 0,
-        "status": "ok",
-        "error_msg": None,
+        "status": run_status,
+        "error_msg": "navigation interrupted" if nav_error else None,
     }
 
     with get_conn() as conn:
@@ -266,11 +282,11 @@ def save_to_db(offers: list, source_url: str) -> dict:
         # co najmniej 85% poprzednich aktywnych) — chroni przed fałszywymi
         # delistingami gdy scraper nie przeszedł wszystkich stron Otodom.
         coverage = len(current_ids) / max(len(prev_active), 1)
-        if disappeared and coverage >= 0.85:
+        if disappeared and run_status == "ok" and coverage >= 0.85:
             mark_delisted(conn, list(disappeared), scrape_date, scrape_ts)
             stats["delisted"] = len(disappeared)
         elif disappeared:
-            log.warning(f"[SKIP DELIST] coverage={coverage:.0%} < 85% — pomijam {len(disappeared)} delist")
+            log.warning(f"[SKIP DELIST] status={run_status} coverage={coverage:.0%} — pomijam {len(disappeared)} delist")
 
         log_run(conn, stats)
 
@@ -290,11 +306,10 @@ def main():
 
     log.info("[START] Scrapowanie sprzedaży mieszkań Mokotów")
     try:
-        offers = scrape(SALE_URL, headless=not args.show_browser)
-        if offers:
-            save_to_db(offers, SALE_URL)
-        else:
-            log.warning("[WARN] Brak ofert")
+        offers, nav_error = scrape(SALE_URL, headless=not args.show_browser)
+        save_to_db(offers, SALE_URL, nav_error=nav_error)
+        if not offers:
+            log.warning("[WARN] Brak ofert — run zapisany jako status=error")
     except Exception as e:
         log.error(f"[FATAL] {e}", exc_info=True)
 
