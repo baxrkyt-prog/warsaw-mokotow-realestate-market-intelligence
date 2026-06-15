@@ -171,6 +171,30 @@ def inject_css():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 
+def tracking_maturity_note():
+    """Ostrzega gdy historia trackingu < 30 dni — wskaźniki przepływu (nowe/zdjęte/
+    absorpcja w oknie 30d) obejmują wtedy całą dotychczasową historię i są zawyżone."""
+    try:
+        from database import get_conn
+        with get_conn() as conn:
+            r = conn.execute("SELECT MIN(scrape_date) mn, MAX(scrape_date) mx, "
+                             "COUNT(DISTINCT scrape_date) d FROM snapshots").fetchone()
+        if not r or not r["mn"]:
+            return
+        from datetime import date
+        days = (date.fromisoformat(r["mx"][:10]) - date.fromisoformat(r["mn"][:10])).days + 1
+        if days < 30:
+            st.markdown(
+                f'<div style="background:#2a2410;border:1px solid #c9a84c;border-radius:6px;'
+                f'padding:8px 14px;margin-bottom:12px;font-size:12px;color:#c9a84c;">'
+                f'⏳ <b>Tracking: {days} dni historii</b> — wskaźniki przepływu (nowe / zdjęte / '
+                f'absorpcja w oknie 30 dni) obejmują na razie całą historię od startu i są '
+                f'zawyżone. Ustabilizują się gdy historia osiągnie 30+ dni.</div>',
+                unsafe_allow_html=True)
+    except Exception:
+        pass
+
+
 def lifecycle_flag(dom_days, is_active: bool, median_dom: int = 60) -> str:
     """Flaga wizualna stanu oferty: 🟢 New / 🟡 Active / 🟠 Aging / 🔴 Stale / ⚫ Delisted."""
     if not is_active:

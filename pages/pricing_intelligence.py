@@ -22,7 +22,8 @@ from analytics import (
 )
 from _ui import (
     inject_css, page_header, kpi_card, section_header, divider,
-    apply_plot_theme, CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_POSITIVE,
+    apply_plot_theme, tracking_maturity_note,
+    CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_POSITIVE,
     CLR_TEXT, CLR_MUTED, CLR_BORDER, CLR_SURFACE,
 )
 
@@ -40,6 +41,7 @@ page_header("Market Liquidity & Pricing",
 st.caption("ℹ️ Ceny transakcyjne są **estymowane** z cen ofertowych (Asking × Discount Factor) — "
            "platforma nie korzysta z płatnych/demonstracyjnych danych transakcyjnych. "
            "Współczynnik kalibrowalny poniżej.")
+tracking_maturity_note()
 
 # ── Sterowanie ─────────────────────────────────
 fc1, fc2, _sp = st.columns([1.4, 1.6, 4])

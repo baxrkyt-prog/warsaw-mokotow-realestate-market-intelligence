@@ -50,7 +50,7 @@ from analytics import (
 )
 from _ui import (
     inject_css, page_header, kpi_card, health_score_widget,
-    section_header, divider, apply_plot_theme, listing_table,
+    section_header, divider, apply_plot_theme, listing_table, tracking_maturity_note,
     CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_TEXT, CLR_MUTED, CLR_BORDER,
 )
 
@@ -265,6 +265,7 @@ if "project_id" in st.query_params:
 # NORMALNY WIDOK
 # ──────────────────────────────────────────────
 page_header("Residential", "Rynek mieszkaniowy Mokotów", color=CLR_RESI)
+tracking_maturity_note()
 
 @st.cache_data(ttl=300)
 def load_data():

@@ -17,7 +17,7 @@ from analytics import (
 )
 from _ui import (
     inject_css, page_header, kpi_card, health_score_widget,
-    section_header, divider, apply_plot_theme, listing_table,
+    section_header, divider, apply_plot_theme, listing_table, tracking_maturity_note,
     CLR_GOLD, CLR_OFFICE, CLR_ALERT, CLR_TEXT, CLR_MUTED, CLR_BORDER, CLR_SURFACE,
 )
 
@@ -49,6 +49,7 @@ if st.button("← Home", key="back_home"):
     st.switch_page("app.py")
 
 page_header("Office Market", "Mokotów · biura na wynajem", color=CLR_OFFICE)
+tracking_maturity_note()
 
 # ── wczytaj dane ─────────────────────────────
 @st.cache_data(ttl=300)
