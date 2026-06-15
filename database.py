@@ -131,6 +131,34 @@ def _register_udfs(conn: sqlite3.Connection) -> None:
                           if (lat is not None and lon is not None) else None,
         deterministic=True,
     )
+    # Days on market: od daty startowej (published_date lub first_seen) do
+    # daty końcowej (delisted_date lub dziś). NIE deterministic — zależy od 'now'.
+    conn.create_function("dom_days", 2, _dom_days)
+
+
+def _dom_days(start_ts, end_ts):
+    """Liczba dni między start a end (end=None → dziś). Toleruje ISO i 'YYYY-MM-DD ...'."""
+    from datetime import datetime, timezone
+    if not start_ts:
+        return None
+    def _parse(s):
+        s = str(s).strip().replace("T", " ")
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(s[:19], fmt)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(s[:19])
+        except ValueError:
+            return None
+    start = _parse(start_ts)
+    if start is None:
+        return None
+    end = _parse(end_ts) if end_ts else datetime.now(timezone.utc).replace(tzinfo=None)
+    if end is None:
+        return None
+    return max(0, (end - start).days)
 
 
 @contextmanager
@@ -261,11 +289,17 @@ def init_db():
 
         # Migracja istniejących baz — dodaj kolumny jeśli brakuje (idempotentne)
         listings_migrations = [
-            ("parent_project_id",   "TEXT"),
-            ("latitude",            "REAL"),
-            ("longitude",           "REAL"),
-            ("geocode_confidence",  "REAL"),
-            ("district_norm",       "TEXT"),
+            ("parent_project_id",        "TEXT"),
+            ("latitude",                 "REAL"),
+            ("longitude",                "REAL"),
+            ("geocode_confidence",       "REAL"),
+            ("district_norm",            "TEXT"),
+            # Listing Lifecycle Intelligence
+            ("listing_status",           "TEXT"),    # ACTIVE | DELISTED | PRICE_REDUCED | PRICE_INCREASED
+            ("delisted_date",            "TEXT"),
+            ("last_known_price",         "REAL"),
+            ("last_known_price_per_m2",  "REAL"),
+            ("published_date",           "TEXT"),     # realna data publikacji z Otodom (dateCreated)
         ]
         for col, typedef in listings_migrations:
             try:
@@ -454,6 +488,22 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_tms_date         ON transaction_market_snapshots(snapshot_date, property_type, district_norm);
 
             CREATE INDEX IF NOT EXISTS idx_spreads_date     ON pricing_spreads(snapshot_date, property_type, district_norm, window_days);
+
+            -- Listing Lifecycle Intelligence: historia zdarzeń per oferta
+            CREATE TABLE IF NOT EXISTS listing_lifecycle_events (
+                event_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                offer_id        TEXT NOT NULL,
+                event_date      TEXT NOT NULL,
+                event_type      TEXT NOT NULL,   -- LISTING_CREATED | PRICE_REDUCED | PRICE_INCREASED | DELISTED | RELISTED
+                previous_value  REAL,
+                new_value       REAL,
+                UNIQUE(offer_id, event_date, event_type)
+            );
+            CREATE INDEX IF NOT EXISTS idx_lifecycle_offer ON listing_lifecycle_events(offer_id);
+            CREATE INDEX IF NOT EXISTS idx_lifecycle_type  ON listing_lifecycle_events(event_type, event_date);
+
+            CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(listing_status);
+            CREATE INDEX IF NOT EXISTS idx_listings_delisted ON listings(delisted_date);
         """)
 
         # Seed taksonomii dzielnic (idempotentne)
@@ -508,10 +558,25 @@ def mark_delisted(conn, offer_ids: list, scrape_date: str, scrape_ts: str):
                 (offer_id, scrape_date, scrape_ts, active_status, current_price, current_price_m2)
             VALUES (?, ?, ?, 0, NULL, NULL)
         """, (oid, scrape_date, scrape_ts))
-        conn.execute(
-            "UPDATE listings SET is_active = 0, last_seen = ? WHERE offer_id = ?",
-            (scrape_date, oid)
-        )
+        # Ostatnia znana cena (przed delistingiem) z najświeższego aktywnego snapshotu
+        last = conn.execute("""
+            SELECT current_price, current_price_m2 FROM snapshots
+            WHERE offer_id=? AND active_status=1 AND current_price IS NOT NULL
+            ORDER BY scrape_date DESC LIMIT 1
+        """, (oid,)).fetchone()
+        last_p = last["current_price"] if last else None
+        last_pm2 = last["current_price_m2"] if last else None
+        conn.execute("""
+            UPDATE listings SET
+                is_active = 0,
+                last_seen = ?,
+                listing_status = 'DELISTED',
+                delisted_date = ?,
+                last_known_price = COALESCE(?, last_known_price),
+                last_known_price_per_m2 = COALESCE(?, last_known_price_per_m2)
+            WHERE offer_id = ?
+        """, (scrape_date, scrape_date, last_p, last_pm2, oid))
+        insert_lifecycle_event(conn, oid, scrape_date, "DELISTED", last_p, None)
 
 
 def upsert_developer_project(conn, data: dict):
@@ -603,6 +668,16 @@ def log_run(conn, data: dict):
              :records_in, :records_new, :records_updated, :records_rejected,
              :delisted, :price_changes, :status, :error_msg, :duration_ms)
     """, payload)
+
+
+def insert_lifecycle_event(conn, offer_id: str, event_date: str, event_type: str,
+                           previous_value=None, new_value=None):
+    """Idempotentny zapis zdarzenia lifecycle (UNIQUE offer_id+date+type)."""
+    conn.execute("""
+        INSERT OR IGNORE INTO listing_lifecycle_events
+            (offer_id, event_date, event_type, previous_value, new_value)
+        VALUES (?, ?, ?, ?, ?)
+    """, (offer_id, event_date, event_type, previous_value, new_value))
 
 
 def upsert_transaction(conn, data: dict):

@@ -17,7 +17,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 from database import (
     init_db, get_conn, extract_otodom_id,
     upsert_listing, insert_snapshot, mark_delisted,
-    get_last_active_offer_ids, log_run
+    get_last_active_offer_ids, log_run, insert_lifecycle_event
 )
 
 logging.basicConfig(
@@ -205,11 +205,34 @@ def parse_listing(article):
             "currency":          "PLN",
             "advertiser_type":   advertiser,
             "parent_project_id": None,
+            "published_date":    None,
         }
 
     except Exception as e:
         log.warning(f"[PARSE ERROR] {e}")
         return None
+
+
+def extract_published_dates(html: str) -> dict:
+    """Mapa {offer_id: dateCreated} z __NEXT_DATA__ (props.pageProps.data.searchAds.items)."""
+    import json
+    out = {}
+    m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
+    if not m:
+        return out
+    try:
+        data = json.loads(m.group(1))
+        items = data["props"]["pageProps"]["data"]["searchAds"]["items"]
+    except (KeyError, ValueError, TypeError):
+        return out
+    for it in items:
+        slug = it.get("slug") or ""
+        dc = str(it.get("dateCreated") or "")[:19]
+        idm = re.search(r"-ID([a-zA-Z0-9]+)$", slug)
+        # 1999-02-29 = sentinel Otodom "brak daty" → pomijamy
+        if idm and dc and not dc.startswith("1999"):
+            out[idm.group(1)] = dc
+    return out
 
 
 def scrape(url: str, headless: bool = True) -> tuple:
@@ -254,6 +277,10 @@ def scrape(url: str, headless: bool = True) -> tuple:
 
             time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
 
+            try:
+                pub_dates = extract_published_dates(page.content())
+            except Exception:
+                pub_dates = {}
             articles = page.query_selector_all(LISTING_SELECTOR)
             log.info(f"  → {len(articles)} ogłoszeń")
 
@@ -265,6 +292,7 @@ def scrape(url: str, headless: bool = True) -> tuple:
             for art in articles:
                 offer = parse_listing(art)
                 if offer and offer["offer_id"] not in seen_ids:
+                    offer["published_date"] = pub_dates.get(offer["offer_id"])
                     seen_ids.add(offer["offer_id"])
                     all_offers.append(offer)
                     new_on_page += 1
@@ -313,14 +341,28 @@ def save_to_db(offers: list, source_url: str, nav_error: bool = False) -> dict:
             current_ids.add(oid)
 
             existing = conn.execute(
-                "SELECT price_total FROM listings WHERE offer_id = ?", (oid,)
+                "SELECT price_total, is_active FROM listings WHERE offer_id = ?", (oid,)
             ).fetchone()
+
+            new_price = offer["price_total"]
+            new_status = "ACTIVE"
 
             if not existing:
                 stats["new_listings"] += 1
-            elif existing["price_total"] and offer["price_total"]:
-                if abs(existing["price_total"] - offer["price_total"]) > 1:
+                insert_lifecycle_event(conn, oid, scrape_date, "LISTING_CREATED", None, new_price)
+            else:
+                if existing["is_active"] == 0:
+                    insert_lifecycle_event(conn, oid, scrape_date, "RELISTED", None, new_price)
+                if existing["price_total"] and new_price and abs(existing["price_total"] - new_price) > 1:
                     stats["price_changes"] += 1
+                    if new_price < existing["price_total"]:
+                        new_status = "PRICE_REDUCED"
+                        insert_lifecycle_event(conn, oid, scrape_date, "PRICE_REDUCED",
+                                               existing["price_total"], new_price)
+                    else:
+                        new_status = "PRICE_INCREASED"
+                        insert_lifecycle_event(conn, oid, scrape_date, "PRICE_INCREASED",
+                                               existing["price_total"], new_price)
 
             upsert_listing(conn, {**offer, "first_seen": scrape_ts, "last_seen": scrape_ts})
             insert_snapshot(conn, {
@@ -328,9 +370,19 @@ def save_to_db(offers: list, source_url: str, nav_error: bool = False) -> dict:
                 "scrape_date":      scrape_date,
                 "scrape_ts":        scrape_ts,
                 "active_status":    1,
-                "current_price":    offer["price_total"],
+                "current_price":    new_price,
                 "current_price_m2": offer["price_per_m2"],
             })
+            conn.execute("""
+                UPDATE listings SET
+                    published_date          = COALESCE(published_date, ?),
+                    listing_status          = ?,
+                    last_known_price        = ?,
+                    last_known_price_per_m2 = ?,
+                    delisted_date           = NULL
+                WHERE offer_id = ?
+            """, (offer.get("published_date"), new_status, new_price,
+                  offer["price_per_m2"], oid))
 
         disappeared = prev_active - current_ids
         coverage = len(current_ids) / max(len(prev_active), 1)

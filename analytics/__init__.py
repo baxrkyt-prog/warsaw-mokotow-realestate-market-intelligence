@@ -100,6 +100,12 @@ from .pricing import (
 )
 from .confidence import confidence_level, winsorize
 
+# Listing Lifecycle Intelligence
+from .lifecycle import (
+    get_dom_stats, get_turnover_rate, get_delisting_kpis, get_delisting_trend,
+    get_listing_flow, get_lifecycle_funnel, get_stale_listings, get_lifecycle_kpis,
+)
+
 # Zone + Narrative (UX redesign)
 from .zone import get_zone_intelligence
 from .narrative import (
@@ -140,6 +146,9 @@ __all__ = [
     "get_spread_table", "get_spread_history",
     "compute_liquidity_score", "compute_pricing_pressure_score",
     "confidence_level", "winsorize",
+    # lifecycle
+    "get_dom_stats", "get_turnover_rate", "get_delisting_kpis", "get_delisting_trend",
+    "get_listing_flow", "get_lifecycle_funnel", "get_stale_listings", "get_lifecycle_kpis",
     # zone + narrative (UX)
     "get_zone_intelligence", "get_market_deltas", "get_what_changed",
     "generate_market_narrative", "generate_market_brief", "generate_market_brief_pdf",

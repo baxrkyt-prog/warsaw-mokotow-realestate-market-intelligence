@@ -51,7 +51,7 @@ from analytics import (
 from _ui import (
     inject_css, page_header, kpi_card, health_score_widget,
     section_header, divider, apply_plot_theme, listing_table,
-    CLR_GOLD, CLR_RESI, CLR_TEXT, CLR_MUTED, CLR_BORDER,
+    CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_TEXT, CLR_MUTED, CLR_BORDER,
 )
 
 st.set_page_config(
@@ -272,7 +272,7 @@ except Exception as e:
     data_ok = False
     summary = trend = zones = forecast = devs = projs = health = kpis = None
 
-tabs = st.tabs(["Market", "Listings", "Developers", "Projects", "Map", "Forecast"])
+tabs = st.tabs(["Market", "Listings", "Developers", "Projects", "Map", "Forecast", "Delisted"])
 
 # ── TAB 0: MARKET ─────────────────────────────
 with tabs[0]:
@@ -659,3 +659,51 @@ with tabs[5]:
         apply_plot_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Model: regresja liniowa. Nie stanowi porady inwestycyjnej.")
+
+# ── TAB 6: DELISTED ───────────────────────────
+with tabs[6]:
+    from analytics import get_delisting_kpis, get_delisting_trend
+    section_header("Delisted Listings", "oferty które zniknęły z rynku — to też market intelligence")
+    dk = get_delisting_kpis("residential")
+    dc = st.columns(4)
+    with dc[0]: kpi_card("Delisted 7d", dk["d7"], "ofert")
+    with dc[1]: kpi_card("Delisted 30d", dk["d30"], "ofert", delta=dk["velocity_delta_pct"], inverse=True)
+    with dc[2]: kpi_card("Delisted 90d", dk["d90"], "ofert")
+    with dc[3]: kpi_card("Tempo", dk["velocity_per_day_30"], "ofert/dzień")
+
+    divider()
+    section_header("Trend delistingu", "miesięcznie, ostatnie 180 dni")
+    tr = get_delisting_trend("residential", bucket="monthly", days=180)
+    if tr.empty:
+        st.caption("Brak danych delistingu.")
+    else:
+        fig = go.Figure(go.Bar(x=tr["period"], y=tr["delisted"], marker_color=CLR_ALERT))
+        fig.update_layout(height=300, yaxis_title="delisted")
+        apply_plot_theme(fig)
+        st.plotly_chart(fig, use_container_width=True)
+
+    divider()
+    section_header("Tabela delisted", "ostatnia znana cena + DOM w momencie zniknięcia")
+    from database import get_conn as _gc
+    with _gc() as _conn:
+        deli = pd.read_sql_query("""
+            SELECT title, subdistrict, building_name,
+                   last_known_price, last_known_price_per_m2,
+                   dom_days(COALESCE(published_date, first_seen), delisted_date) AS dom,
+                   delisted_date
+            FROM listings
+            WHERE asset_class='residential' AND transaction_type IN ('sale','invest_unit')
+              AND is_active=0 AND delisted_date IS NOT NULL
+            ORDER BY delisted_date DESC LIMIT 200
+        """, _conn)
+    if deli.empty:
+        st.caption("Brak delisted ofert.")
+    else:
+        d = deli.copy()
+        d["Cena (PLN)"] = d["last_known_price"].apply(lambda x: f"{x:,.0f}".replace(",", " ") if pd.notna(x) else "—")
+        d["PLN/m²"] = d["last_known_price_per_m2"].round(0)
+        d["DOM (dni)"] = d["dom"]
+        d["Oferta"] = d["title"].fillna("—").str.slice(0, 45)
+        d = d[["Oferta", "subdistrict", "Cena (PLN)", "PLN/m²", "DOM (dni)", "delisted_date"]]
+        d.columns = ["Oferta", "Dzielnica", "Ostatnia cena", "PLN/m²", "DOM (dni)", "Delisted"]
+        st.dataframe(d, use_container_width=True, hide_index=True, height=400)

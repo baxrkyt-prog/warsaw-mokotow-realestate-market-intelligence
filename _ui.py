@@ -171,6 +171,21 @@ def inject_css():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 
+def lifecycle_flag(dom_days, is_active: bool, median_dom: int = 60) -> str:
+    """Flaga wizualna stanu oferty: 🟢 New / 🟡 Active / 🟠 Aging / 🔴 Stale / ⚫ Delisted."""
+    if not is_active:
+        return "⚫ Delisted"
+    if dom_days is None:
+        return "🟡 Active"
+    if dom_days <= 30:
+        return "🟢 New"
+    if dom_days >= median_dom * 2:
+        return "🔴 Stale"
+    if dom_days >= median_dom:
+        return "🟠 Aging"
+    return "🟡 Active"
+
+
 def has_demo_transactions() -> bool:
     """True jeśli w bazie są poglądowe (nie-realne) dane transakcyjne."""
     try:
