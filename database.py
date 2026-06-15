@@ -568,6 +568,13 @@ def mark_delisted(conn, offer_ids: list, scrape_date: str, scrape_ts: str):
     Oferty one-shot (1 scrape → zniknęła) to artefakt rotacji ID/cold-startu —
     dezaktywujemy je, ale NIE liczymy jako realny delisting (delisted_date=NULL)."""
     for oid in offer_ids:
+        # Zabezpieczenie przed fałszywym delistingiem z podwójnego scrape'a tego samego
+        # dnia: jeśli oferta była widziana aktywna DZIŚ (inny run), nie delistuj.
+        seen_today = conn.execute("""
+            SELECT 1 FROM snapshots WHERE offer_id=? AND active_status=1 AND scrape_date=?
+        """, (oid, scrape_date)).fetchone()
+        if seen_today:
+            continue
         conn.execute("""
             INSERT OR IGNORE INTO snapshots
                 (offer_id, scrape_date, scrape_ts, active_status, current_price, current_price_m2)
