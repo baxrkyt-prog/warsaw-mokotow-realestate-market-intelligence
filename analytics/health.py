@@ -31,7 +31,7 @@ def compute_office_health_score() -> dict:
 
         a = conn.execute("""
             SELECT
-                COUNT(CASE WHEN l.is_active=0 AND l.last_seen >= date('now','-30 days') THEN 1 END) as del30,
+                COUNT(CASE WHEN l.delisted_date >= date('now','-30 days') THEN 1 END) as del30,
                 COUNT(CASE WHEN l.first_seen >= date('now','-30 days') THEN 1 END) as new30
             FROM listings l WHERE l.asset_class='office'
         """).fetchone()
@@ -103,8 +103,8 @@ def compute_project_health_score(project_id: str) -> dict:
             SELECT
                 COUNT(*) as total_seen,
                 COUNT(CASE WHEN is_active=1 THEN 1 END) as active,
-                COUNT(CASE WHEN is_active=0 AND last_seen >= date('now','-30 days') THEN 1 END) as sold_30,
-                COUNT(CASE WHEN is_active=0 THEN 1 END) as sold_total
+                COUNT(CASE WHEN delisted_date >= date('now','-30 days') THEN 1 END) as sold_30,
+                COUNT(CASE WHEN delisted_date IS NOT NULL THEN 1 END) as sold_total
             FROM listings
             WHERE parent_project_id=? AND transaction_type='invest_unit'
         """, (project_id,)).fetchone()

@@ -409,7 +409,7 @@ def get_developers_table() -> pd.DataFrame:
                 COUNT(DISTINCT dp.project_id) as active_projects,
                 SUM(CASE WHEN l.is_active=1 THEN 1 ELSE 0 END) as available_units,
                 AVG(CASE WHEN l.is_active=1 THEN l.price_per_m2 END) as avg_price_m2,
-                COUNT(CASE WHEN l.is_active=0 AND l.last_seen >= date('now','-30 days') THEN 1 END) as sold_30d
+                COUNT(CASE WHEN l.delisted_date >= date('now','-30 days') THEN 1 END) as sold_30d
             FROM developer_projects dp
             LEFT JOIN listings l ON l.parent_project_id=dp.project_id
               AND l.transaction_type='invest_unit'
@@ -493,8 +493,9 @@ def get_office_kpis_with_deltas() -> dict:
         new60 = conn.execute(
             "SELECT COUNT(*) as c FROM listings WHERE asset_class='office' AND first_seen BETWEEN date('now','-60 days') AND date('now','-31 days')"
         ).fetchone()
+        # Potwierdzony delisting (delisted_date) — wyklucza artefakty one-shot/cold-start
         abs30 = conn.execute(
-            "SELECT COUNT(*) as c FROM listings WHERE asset_class='office' AND is_active=0 AND last_seen >= date('now','-30 days')"
+            "SELECT COUNT(*) as c FROM listings WHERE asset_class='office' AND delisted_date >= date('now','-30 days')"
         ).fetchone()
 
         adv = conn.execute("""
@@ -572,7 +573,7 @@ def get_residential_kpis_with_deltas() -> dict:
         """).fetchone()
         new7 = conn.execute("SELECT COUNT(*) as c FROM listings WHERE asset_class='residential' AND transaction_type='sale' AND first_seen >= date('now','-7 days')").fetchone()
         new14 = conn.execute("SELECT COUNT(*) as c FROM listings WHERE asset_class='residential' AND transaction_type='sale' AND first_seen BETWEEN date('now','-14 days') AND date('now','-8 days')").fetchone()
-        del30 = conn.execute("SELECT COUNT(*) as c FROM listings WHERE asset_class='residential' AND transaction_type='sale' AND is_active=0 AND last_seen >= date('now','-30 days')").fetchone()
+        del30 = conn.execute("SELECT COUNT(*) as c FROM listings WHERE asset_class='residential' AND transaction_type='sale' AND delisted_date >= date('now','-30 days')").fetchone()
 
     pc = round(p_curr["v"], 0) if p_curr and p_curr["v"] else None
     pp = p_prev["v"] if p_prev else None

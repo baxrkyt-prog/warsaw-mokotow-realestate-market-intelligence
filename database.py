@@ -563,13 +563,19 @@ def insert_snapshot(conn, data: dict):
 
 
 def mark_delisted(conn, offer_ids: list, scrape_date: str, scrape_ts: str):
+    """Oznacza oferty jako nieaktywne. Delisting liczy się jako POTWIERDZONY
+    (delisted_date + event) tylko gdy oferta była widziana w ≥2 aktywnych scrape'ach.
+    Oferty one-shot (1 scrape → zniknęła) to artefakt rotacji ID/cold-startu —
+    dezaktywujemy je, ale NIE liczymy jako realny delisting (delisted_date=NULL)."""
     for oid in offer_ids:
         conn.execute("""
             INSERT OR IGNORE INTO snapshots
                 (offer_id, scrape_date, scrape_ts, active_status, current_price, current_price_m2)
             VALUES (?, ?, ?, 0, NULL, NULL)
         """, (oid, scrape_date, scrape_ts))
-        # Ostatnia znana cena (przed delistingiem) z najświeższego aktywnego snapshotu
+        active_snaps = conn.execute("""
+            SELECT COUNT(*) c FROM snapshots WHERE offer_id=? AND active_status=1
+        """, (oid,)).fetchone()["c"]
         last = conn.execute("""
             SELECT current_price, current_price_m2 FROM snapshots
             WHERE offer_id=? AND active_status=1 AND current_price IS NOT NULL
@@ -577,17 +583,24 @@ def mark_delisted(conn, offer_ids: list, scrape_date: str, scrape_ts: str):
         """, (oid,)).fetchone()
         last_p = last["current_price"] if last else None
         last_pm2 = last["current_price_m2"] if last else None
-        conn.execute("""
-            UPDATE listings SET
-                is_active = 0,
-                last_seen = ?,
-                listing_status = 'DELISTED',
-                delisted_date = ?,
-                last_known_price = COALESCE(?, last_known_price),
-                last_known_price_per_m2 = COALESCE(?, last_known_price_per_m2)
-            WHERE offer_id = ?
-        """, (scrape_date, scrape_date, last_p, last_pm2, oid))
-        insert_lifecycle_event(conn, oid, scrape_date, "DELISTED", last_p, None)
+
+        if active_snaps >= 2:
+            # potwierdzony delisting — oferta była stabilnie na rynku
+            conn.execute("""
+                UPDATE listings SET is_active=0, last_seen=?, listing_status='DELISTED',
+                    delisted_date=?, last_known_price=COALESCE(?, last_known_price),
+                    last_known_price_per_m2=COALESCE(?, last_known_price_per_m2)
+                WHERE offer_id=?
+            """, (scrape_date, scrape_date, last_p, last_pm2, oid))
+            insert_lifecycle_event(conn, oid, scrape_date, "DELISTED", last_p, None)
+        else:
+            # one-shot — dezaktywacja bez liczenia jako delisting (artefakt)
+            conn.execute("""
+                UPDATE listings SET is_active=0, last_seen=?, listing_status='UNCONFIRMED',
+                    last_known_price=COALESCE(?, last_known_price),
+                    last_known_price_per_m2=COALESCE(?, last_known_price_per_m2)
+                WHERE offer_id=?
+            """, (scrape_date, last_p, last_pm2, oid))
 
 
 def upsert_developer_project(conn, data: dict):
