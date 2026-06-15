@@ -20,7 +20,7 @@ from analytics import (
 )
 from _ui import (
     inject_css, page_header, kpi_card, section_header, divider,
-    apply_plot_theme, lifecycle_flag,
+    apply_plot_theme, lifecycle_flag, tracking_maturity_note,
     CLR_GOLD, CLR_RESI, CLR_OFFICE, CLR_ALERT, CLR_POSITIVE,
     CLR_TEXT, CLR_MUTED, CLR_BORDER, CLR_SURFACE,
 )
@@ -35,6 +35,7 @@ if st.button("← Home", key="back_home"):
 page_header("Listing Lifecycle Intelligence",
             "Market flow — jak szybko rynek się obraca, co znika, co się starzeje",
             color=CLR_GOLD)
+tracking_maturity_note()
 
 ac = st.radio("Segment", options=["residential", "office"], horizontal=True,
               format_func=lambda x: "Mieszkania" if x == "residential" else "Biura")
@@ -44,10 +45,12 @@ dom = get_dom_stats(ac)
 funnel = get_lifecycle_funnel(ac)
 deli = get_delisting_kpis(ac)
 
-# Ostrzeżenie o dojrzewaniu DOM
-if not k["real_dom"]:
-    st.caption("⏳ DOM liczony od startu trackingu (realna data publikacji z Otodom dochodzi "
-               "przy kolejnych scrape'ach) — wartości będą rosły, aż historia dojrzeje.")
+# Pokrycie DOM — DOM liczony tylko z realnej daty publikacji (published_date)
+cov = dom.get("coverage_pct", 0)
+if cov < 100:
+    st.caption(f"📅 DOM liczony z realnej daty publikacji oferty. Pokrycie: **{cov}%** "
+               f"aktywnych ofert ma znaną datę (reszta — np. Morizon — bez daty publikacji, "
+               f"wykluczona z DOM, by nie zaniżać wyniku).")
 
 # ── KPI ROW ────────────────────────────────────
 section_header("Market Flow — kluczowe wskaźniki")

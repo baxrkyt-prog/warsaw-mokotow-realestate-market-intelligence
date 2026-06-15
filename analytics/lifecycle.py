@@ -35,37 +35,40 @@ def _asset_filter(asset_class: str | None):
 
 
 def get_dom_stats(asset_class: str = "residential") -> dict:
-    """Median/avg DOM + rozkład bucketów dla aktywnych ofert."""
+    """Median/avg DOM + buckety dla aktywnych ofert.
+
+    DOM liczony WYŁĄCZNIE z published_date (realna data publikacji). first_seen NIE
+    jest używany jako fallback — dla oferty pobranej dziś first_seen=dziś, co
+    zaniżałoby DOM do ~0 (oferta może mieć miesiące). Oferty bez published_date
+    (np. Morizon) są wykluczone z DOM — nie znamy ich realnego wieku.
+    """
     where, _ = _asset_filter(asset_class)
     with get_conn() as conn:
         df = pd.read_sql_query(f"""
-            SELECT dom_days({_DOM_START}, NULL) AS dom
+            SELECT dom_days(published_date, NULL) AS dom
             FROM listings
-            WHERE {where} AND is_active=1 AND {_DOM_START} IS NOT NULL
+            WHERE {where} AND is_active=1 AND published_date IS NOT NULL
         """, conn)
+        total = conn.execute(
+            f"SELECT COUNT(*) c FROM listings WHERE {where} AND is_active=1").fetchone()["c"]
+
     if df.empty or df["dom"].dropna().empty:
-        return {"median_dom": None, "avg_dom": None, "n": 0,
+        return {"median_dom": None, "avg_dom": None, "n": 0, "coverage_pct": 0,
                 "buckets": {l: 0 for l in DOM_BUCKET_LABELS}, "real_dom": False}
 
     dom = df["dom"].dropna()
     buckets = {}
     for (lo, hi), label in zip(DOM_BUCKETS, DOM_BUCKET_LABELS):
         buckets[label] = int(((dom >= lo) & (dom <= hi)).sum())
-
-    # czy DOM jest "realny" (oparty na published_date) czy dopiero się buduje
-    with get_conn() as conn:
-        pub = conn.execute(f"""
-            SELECT COUNT(*) n, SUM(published_date IS NOT NULL) p
-            FROM listings WHERE {where} AND is_active=1
-        """).fetchone()
-    real = bool(pub and pub["n"] and pub["p"] and pub["p"] / pub["n"] > 0.5)
+    coverage = round(len(dom) / total * 100) if total else 0
 
     return {
         "median_dom": int(dom.median()),
         "avg_dom": int(dom.mean()),
         "n": int(len(dom)),
+        "coverage_pct": coverage,      # % aktywnych ofert ze znaną datą publikacji
         "buckets": buckets,
-        "real_dom": real,
+        "real_dom": len(dom) >= 10,    # wystarczająco dużo ofert ze znaną datą
     }
 
 
@@ -161,7 +164,10 @@ def get_lifecycle_funnel(asset_class: str = "residential") -> dict:
             SELECT COUNT(*) c FROM listings
             WHERE {where} AND is_active=1 AND listing_status IN ('PRICE_REDUCED','PRICE_INCREASED')
         """).fetchone()["c"]
-        delisted = conn.execute(f"SELECT COUNT(*) c FROM listings WHERE {where} AND is_active=0").fetchone()["c"]
+        # Potwierdzony delisting (delisted_date) — bez artefaktów one-shot/cold-start
+        delisted = conn.execute(
+            f"SELECT COUNT(*) c FROM listings WHERE {where} AND delisted_date >= date('now','-30 days')"
+        ).fetchone()["c"]
     return {"NEW": new30, "ACTIVE": active, "PRICE_CHANGED": price_changed, "DELISTED": delisted}
 
 
@@ -175,13 +181,13 @@ def get_stale_listings(asset_class: str = "residential", limit: int = 100) -> pd
         df = pd.read_sql_query(f"""
             SELECT offer_id, title, url, building_name, parent_project_id,
                    subdistrict, price_total, price_per_m2, listing_status,
-                   dom_days({_DOM_START}, NULL) AS dom,
+                   dom_days(published_date, NULL) AS dom,
                    (SELECT COUNT(*) FROM listing_lifecycle_events e
                     WHERE e.offer_id=listings.offer_id
                       AND e.event_type IN ('PRICE_REDUCED','PRICE_INCREASED')) AS price_changes
             FROM listings
-            WHERE {where} AND is_active=1 AND {_DOM_START} IS NOT NULL
-              AND dom_days({_DOM_START}, NULL) >= {threshold}
+            WHERE {where} AND is_active=1 AND published_date IS NOT NULL
+              AND dom_days(published_date, NULL) >= {threshold}
             ORDER BY dom DESC
             LIMIT {limit}
         """, conn)
@@ -217,10 +223,10 @@ def get_building_lifecycle() -> pd.DataFrame:
     with get_conn() as conn:
         active = pd.read_sql_query(f"""
             SELECT building_name,
-                   dom_days({_DOM_START}, NULL) AS dom
+                   dom_days(published_date, NULL) AS dom
             FROM listings
             WHERE asset_class='office' AND is_active=1 AND building_name IS NOT NULL
-              AND {_DOM_START} IS NOT NULL
+              AND published_date IS NOT NULL
         """, conn)
         flow = pd.read_sql_query(f"""
             SELECT building_name,
@@ -267,9 +273,9 @@ def get_project_lifecycle(project_id: str) -> dict:
     """Per projekt deweloperski: median DOM jednostek, nowe/delisted 30d, turnover."""
     with get_conn() as conn:
         med = conn.execute(f"""
-            SELECT dom_days({_DOM_START}, NULL) AS dom FROM listings
+            SELECT dom_days(published_date, NULL) AS dom FROM listings
             WHERE parent_project_id=? AND transaction_type='invest_unit'
-              AND is_active=1 AND {_DOM_START} IS NOT NULL
+              AND is_active=1 AND published_date IS NOT NULL
         """, (project_id,)).fetchall()
         flow = conn.execute(f"""
             SELECT

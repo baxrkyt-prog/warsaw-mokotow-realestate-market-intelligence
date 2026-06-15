@@ -92,8 +92,8 @@ def get_market_liquidity(segment: str = "all", window_days: int = 30) -> dict:
             FROM listings WHERE {where}
         """).fetchone()
         exposure = pd.read_sql_query(f"""
-            SELECT dom_days({_DOM_START}, NULL) AS dom FROM listings
-            WHERE {where} AND is_active=1 AND {_DOM_START} IS NOT NULL
+            SELECT dom_days(published_date, NULL) AS dom FROM listings
+            WHERE {where} AND is_active=1 AND published_date IS NOT NULL
         """, conn)
 
     new_w = flow["new_w"] or 0
