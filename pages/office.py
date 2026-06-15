@@ -502,7 +502,7 @@ with tabs[7]:
     from database import get_conn as _gc
     with _gc() as _conn:
         deli = pd.read_sql_query("""
-            SELECT title, building_name, last_known_price_per_m2,
+            SELECT title, building_name, url, last_known_price_per_m2,
                    dom_days(COALESCE(published_date, first_seen), delisted_date) AS dom,
                    delisted_date
             FROM listings
@@ -517,6 +517,10 @@ with tabs[7]:
         d["DOM (dni)"] = d["dom"]
         d["Budynek"] = d["building_name"].fillna("—")
         d["Oferta"] = d["title"].fillna("—").str.slice(0, 45)
-        d = d[["Oferta", "Budynek", "Stawka PLN/m²/mc", "DOM (dni)", "delisted_date"]]
-        d.columns = ["Oferta", "Budynek", "Stawka PLN/m²/mc", "DOM (dni)", "Delisted"]
-        st.dataframe(d, use_container_width=True, hide_index=True, height=400)
+        d = d[["Oferta", "Budynek", "Stawka PLN/m²/mc", "DOM (dni)", "delisted_date", "url"]]
+        d.columns = ["Oferta", "Budynek", "Stawka PLN/m²/mc", "DOM (dni)", "Delisted", "Link"]
+        st.dataframe(d, use_container_width=True, hide_index=True, height=400,
+                     column_config={"Link": st.column_config.LinkColumn(
+                         "Archiwum", display_text="otwórz ↗")})
+        st.caption("Link prowadzi do archiwalnego ogłoszenia na Otodom — może już nie istnieć (404) "
+                   "lub być przekierowane, bo oferta została zdjęta.")

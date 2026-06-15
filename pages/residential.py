@@ -691,7 +691,7 @@ with tabs[6]:
     from database import get_conn as _gc
     with _gc() as _conn:
         deli = pd.read_sql_query("""
-            SELECT title, subdistrict, building_name,
+            SELECT title, subdistrict, building_name, url,
                    last_known_price, last_known_price_per_m2,
                    dom_days(COALESCE(published_date, first_seen), delisted_date) AS dom,
                    delisted_date
@@ -708,6 +708,10 @@ with tabs[6]:
         d["PLN/m²"] = d["last_known_price_per_m2"].round(0)
         d["DOM (dni)"] = d["dom"]
         d["Oferta"] = d["title"].fillna("—").str.slice(0, 45)
-        d = d[["Oferta", "subdistrict", "Cena (PLN)", "PLN/m²", "DOM (dni)", "delisted_date"]]
-        d.columns = ["Oferta", "Dzielnica", "Ostatnia cena", "PLN/m²", "DOM (dni)", "Delisted"]
-        st.dataframe(d, use_container_width=True, hide_index=True, height=400)
+        d = d[["Oferta", "subdistrict", "Cena (PLN)", "PLN/m²", "DOM (dni)", "delisted_date", "url"]]
+        d.columns = ["Oferta", "Dzielnica", "Ostatnia cena", "PLN/m²", "DOM (dni)", "Delisted", "Link"]
+        st.dataframe(d, use_container_width=True, hide_index=True, height=400,
+                     column_config={"Link": st.column_config.LinkColumn(
+                         "Archiwum", display_text="otwórz ↗")})
+        st.caption("Link prowadzi do archiwalnego ogłoszenia na Otodom/Morizon — może już nie istnieć "
+                   "(404) lub być przekierowane, bo oferta została zdjęta.")
